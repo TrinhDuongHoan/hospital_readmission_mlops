@@ -1,0 +1,46 @@
+data:
+  csv_path: data/diabetic_data.csv
+
+model:
+  name: HospitalReadmissionModel
+  experiment_name: Hospital_Readmission
+  test_size: 0.2
+  random_state: 42
+  candidates:
+    - name: random_forest
+      type: random_forest
+      params:
+        n_estimators: 150
+        max_depth: 12
+        class_weight: balanced
+    - name: xgboost
+      type: xgboost
+      params:
+        n_estimators: 200
+        max_depth: 5
+        learning_rate: 0.05
+        subsample: 0.8
+        colsample_bytree: 0.8
+        scale_pos_weight: 7.5
+    - name: logistic_regression
+      type: logistic_regression
+      params:
+        solver: saga
+        penalty: l2
+        C: 1.0
+        max_iter: 2000
+        class_weight: balanced
+
+selection:
+  metric: roc_auc
+  mode: max
+
+output:
+  model_path: models/model.pkl
+  metrics_path: reports/metrics.json
+
+mlflow:
+  tracking_uri: http://localhost:5000
+  s3_endpoint_url: http://localhost:9000
+  aws_access_key_id: minio
+  aws_secret_access_key: minio123

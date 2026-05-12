@@ -1,0 +1,17 @@
+data:
+  csv_path: data/diabetic_data.csv
+  target_column: readmitted
+  positive_class: "<30"
+
+model:
+  name: HospitalReadmissionModel
+  experiment_name: Hospital_Readmission
+  test_size: 0.2
+  random_state: 42
+  n_estimators: 150
+  max_depth: 12
+  class_weight: balanced
+
+training:
+  metrics_path: reports/metrics.json
+  model_path: models/model.pkl

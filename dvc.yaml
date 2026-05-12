@@ -1,0 +1,13 @@
+stages:
+  train:
+    cmd: python training/train.py
+    deps:
+      - data/diabetic_data.csv
+      - training/train.py
+      - training/config.yaml
+      - params.yaml
+    outs:
+      - models/model.pkl
+    metrics:
+      - reports/metrics.json:
+          cache: false
