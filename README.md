@@ -85,10 +85,12 @@ CSV / Patient Events
 ├── models/                  # Local model artifact
 ├── reports/                 # Metrics and retraining state
 ├── spark/                   # Spark Docker image and ETL jobs
+├── tests/                   # Unit tests for API, training, preprocessing, and helpers
 ├── training/                # Training, evaluation, model registration scripts
 ├── docker-compose.yml       # Full local MLOps stack
 ├── dvc.yaml                 # DVC training stage
 ├── params.yaml              # Training parameters
+├── pytest.ini               # Pytest discovery and warning configuration
 └── README.md
 ```
 
@@ -132,6 +134,25 @@ Default users:
 | --- | --- | --- |
 | Doctor | `doctor01` | `doctor123` |
 | Admin | `admin01` | `admin123` |
+
+## Local Development
+
+Use a Python virtual environment when running tests, scripts, or API code outside Docker:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Start only the FastAPI service locally:
+
+```bash
+uvicorn inference.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The local API reads configuration from environment variables or `.env`. For the full dependency stack, prefer Docker Compose.
 
 ## Service URLs
 
@@ -340,6 +361,31 @@ Generated diagrams:
 docs/generated_diagrams/
 ```
 
+## Testing
+
+Run the test suite from the project root:
+
+```bash
+pytest
+```
+
+The current tests cover:
+
+- Authentication and JWT helper behavior
+- Prediction API request handling with mocked model dependencies
+- Database helper functions using an in-memory SQLite setup
+- Preprocessing and feature preparation logic
+- Training pipeline behavior with lightweight fixtures
+- Retraining data preparation checks
+
+The tests are designed to run without Docker, PostgreSQL, Kafka, Spark, Airflow, or MLflow services. Test bootstrap code in `tests/conftest.py` provides local environment defaults and lightweight stubs where needed.
+
+Expected result:
+
+```text
+22 passed
+```
+
 ## Useful Commands
 
 Stop the stack:
@@ -368,9 +414,36 @@ Rebuild one service:
 docker compose up -d --build fastapi
 ```
 
+## Troubleshooting
+
+`ModuleNotFoundError: No module named 'jose'`
+
+Install the project dependencies in the active virtual environment:
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install only the authentication dependencies:
+
+```bash
+pip install "python-jose[cryptography]" "passlib[bcrypt]" bcrypt
+```
+
+`pytest_asyncio` loop-scope warning
+
+The project includes `pytest.ini` to suppress the known collection warning. If it still appears, make sure you run `pytest` from the project root with the updated file present.
+
+Missing dataset
+
+If `data/diabetic_data.csv` is not available, restore it from DVC before running training or ETL:
+
+```bash
+dvc pull data/diabetic_data.csv.dvc
+```
+
 ## Notes
 
 - This repository is intended for local MLOps experimentation and demonstration.
 - The current model metrics are suitable for project demonstration, not clinical deployment.
 - Before real-world use, the model should be validated with stronger evaluation, calibration, bias analysis, explainability, and clinical governance.
-
