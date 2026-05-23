@@ -1,5 +1,6 @@
 data:
   csv_path: data/diabetic_data.csv
+  feature_path: data/features/offline/patient_features.parquet
 
 model:
   name: HospitalReadmissionModel

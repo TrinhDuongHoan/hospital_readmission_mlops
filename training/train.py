@@ -7,6 +7,7 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 import yaml
+from pandas.api.types import is_string_dtype
 
 from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
@@ -25,6 +26,44 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 DEFAULT_CONFIG_PATH = "training/config.yaml"
+
+NON_FEATURE_COLUMNS = [
+    "encounter_id",
+    "patient_nbr",
+    "weight",
+    "payer_code",
+    "medical_specialty",
+    "readmitted",
+    "event_timestamp",
+    "kafka_key",
+    "kafka_timestamp",
+    "created_at",
+    "updated_at",
+]
+
+COLUMN_RENAME_MAP = {
+    "a1c_result": "A1Cresult",
+    "diabetes_med": "diabetesMed",
+    "glyburide_metformin": "glyburide-metformin",
+    "glipizide_metformin": "glipizide-metformin",
+    "glimepiride_pioglitazone": "glimepiride-pioglitazone",
+    "metformin_rosiglitazone": "metformin-rosiglitazone",
+    "metformin_pioglitazone": "metformin-pioglitazone",
+}
+
+NUMERIC_FEATURE_COLUMNS = [
+    "admission_type_id",
+    "discharge_disposition_id",
+    "admission_source_id",
+    "time_in_hospital",
+    "num_lab_procedures",
+    "num_procedures",
+    "num_medications",
+    "number_outpatient",
+    "number_emergency",
+    "number_inpatient",
+    "number_diagnoses",
+]
 
 
 def load_config(config_path: str = DEFAULT_CONFIG_PATH) -> dict:
@@ -65,23 +104,37 @@ def configure_mlflow_artifact_store(config: dict) -> None:
             os.environ[env_name] = str(env_value)
 
 
-def load_data(csv_path: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
-    df = df.replace("?", pd.NA)
-    df["readmitted_binary"] = (df["readmitted"] == "<30").astype(int)
+def read_training_data(data_path: str) -> pd.DataFrame:
+    path = Path(data_path)
 
-    drop_cols = [
-        "encounter_id",
-        "patient_nbr",
-        "weight",
-        "payer_code",
-        "medical_specialty",
-        "readmitted",
-    ]
+    if path.suffix.lower() == ".parquet":
+        return pd.read_parquet(path)
+
+    return pd.read_csv(path)
+
+
+def load_data(data_path: str) -> pd.DataFrame:
+    df = read_training_data(data_path)
+    df = df.replace("?", pd.NA)
+
+    df = df.rename(columns=COLUMN_RENAME_MAP)
+
+    if "readmitted_binary" not in df.columns:
+        if "readmitted" not in df.columns:
+            raise ValueError(
+                "Training data must contain either readmitted or readmitted_binary."
+            )
+
+        df["readmitted_binary"] = (df["readmitted"] == "<30").astype(int)
+    else:
+        df["readmitted_binary"] = pd.to_numeric(
+            df["readmitted_binary"],
+            errors="coerce",
+        )
 
     existing_drop_cols = [
         column_name
-        for column_name in drop_cols
+        for column_name in NON_FEATURE_COLUMNS
         if column_name in df.columns
     ]
 
@@ -92,11 +145,26 @@ def load_data(csv_path: str) -> pd.DataFrame:
             "race",
             "gender",
             "age",
+            "readmitted_binary",
         ]
     )
 
-    categorical_cols = df.select_dtypes(include=["object"]).columns.tolist()
-    numeric_cols = df.select_dtypes(exclude=["object"]).columns.tolist()
+    df["readmitted_binary"] = df["readmitted_binary"].astype(int)
+
+    for column_name in NUMERIC_FEATURE_COLUMNS:
+        if column_name in df.columns:
+            df[column_name] = pd.to_numeric(df[column_name], errors="coerce")
+
+    categorical_cols = [
+        column_name
+        for column_name in df.columns
+        if is_string_dtype(df[column_name]) or df[column_name].dtype == "object"
+    ]
+    numeric_cols = [
+        column_name
+        for column_name in df.columns
+        if column_name not in categorical_cols
+    ]
 
     if "readmitted_binary" in numeric_cols:
         numeric_cols.remove("readmitted_binary")
@@ -178,8 +246,16 @@ def build_estimator(candidate: dict, config: dict):
 
 
 def build_model(X_train: pd.DataFrame, config: dict, candidate: dict) -> Pipeline:
-    categorical_cols = X_train.select_dtypes(include=["object"]).columns.tolist()
-    numeric_cols = X_train.select_dtypes(exclude=["object"]).columns.tolist()
+    categorical_cols = [
+        column_name
+        for column_name in X_train.columns
+        if is_string_dtype(X_train[column_name]) or X_train[column_name].dtype == "object"
+    ]
+    numeric_cols = [
+        column_name
+        for column_name in X_train.columns
+        if column_name not in categorical_cols
+    ]
 
     numeric_transformer = Pipeline(
         steps=[
@@ -243,9 +319,12 @@ def is_better_metric(new_value: float, current_value: float | None, mode: str) -
 def main():
     config = load_config()
 
-    csv_path = os.getenv(
-        "CSV_PATH",
-        get_config_value(config, ["data", "csv_path"], "data/diabetic_data.csv"),
+    training_data_path = os.getenv(
+        "TRAINING_DATA_PATH",
+        os.getenv(
+            "CSV_PATH",
+            get_config_value(config, ["data", "csv_path"], "data/diabetic_data.csv"),
+        ),
     )
 
     model_path = os.getenv(
@@ -273,7 +352,7 @@ def main():
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment(experiment_name)
 
-    df = load_data(csv_path)
+    df = load_data(training_data_path)
 
     X = df.drop(columns=["readmitted_binary"])
     y = df["readmitted_binary"]
@@ -368,6 +447,7 @@ def main():
         "model_type": champion_result["model_type"],
         "metrics": champion_result["metrics"],
         "params": champion_result["params"],
+        "training_data_path": training_data_path,
         "all_candidates": training_results,
     }
 

@@ -6,11 +6,7 @@ INPUT_PATH = "/opt/project/data/gold/diabetic_gold.parquet"
 OUTPUT_PATH = "/opt/project/data/features/offline/patient_features.parquet"
 
 
-FEATURE_COLUMNS = [
-    "encounter_id",
-    "patient_nbr",
-    "event_timestamp",
-
+TRAINING_FEATURE_COLUMNS = [
     "race",
     "gender",
     "age",
@@ -63,7 +59,10 @@ FEATURE_COLUMNS = [
 
     "change",
     "diabetesMed",
+]
 
+OUTPUT_COLUMNS = [
+    *TRAINING_FEATURE_COLUMNS,
     "readmitted_binary",
 ]
 
@@ -103,7 +102,7 @@ def main():
 
     existing_feature_columns = [
         column_name
-        for column_name in FEATURE_COLUMNS
+        for column_name in OUTPUT_COLUMNS
         if column_name in df.columns
     ]
 

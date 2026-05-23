@@ -87,6 +87,39 @@ def test_load_data_cleans_dataset_and_builds_binary_target(tmp_path):
     assert pd.api.types.is_numeric_dtype(data["time_in_hospital"])
 
 
+def test_load_data_reads_offline_feature_parquet(tmp_path):
+    parquet_path = tmp_path / "patient_features.parquet"
+    pd.DataFrame(
+        [
+            {
+                "race": "Asian",
+                "gender": "Female",
+                "age": "[50-60)",
+                "time_in_hospital": 3,
+                "num_medications": 12,
+                "event_timestamp": "2026-01-01T00:00:00Z",
+                "readmitted_binary": 1,
+            },
+            {
+                "race": "Caucasian",
+                "gender": "Male",
+                "age": "[60-70)",
+                "time_in_hospital": 4,
+                "num_medications": 15,
+                "event_timestamp": "2026-01-02T00:00:00Z",
+                "readmitted_binary": 0,
+            },
+        ]
+    ).to_parquet(parquet_path, index=False)
+
+    data = load_data(str(parquet_path))
+
+    assert len(data) == 2
+    assert data["readmitted_binary"].tolist() == [1, 0]
+    assert "event_timestamp" not in data.columns
+    assert pd.api.types.is_numeric_dtype(data["time_in_hospital"])
+
+
 def test_get_model_candidates_uses_configured_candidates_or_default():
     configured = {
         "model": {
