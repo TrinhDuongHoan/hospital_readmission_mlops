@@ -75,6 +75,7 @@ CSV Patient Events ---> Kafka ---> Spark Streaming ---> Bronze Parquet
 
 ```text
 .
+├── .github/workflows/       # CI/CD workflows for tests, builds, and image release
 ├── airflow/                 # Airflow image and DAGs
 ├── data/                    # Raw CSV, bronze/gold/features data
 ├── docs/                    # Project report and generated diagrams
@@ -405,6 +406,36 @@ Expected result:
 
 ```text
 22 passed
+```
+
+## CI/CD
+
+GitHub Actions workflows are defined in:
+
+```text
+.github/workflows/ci.yml
+.github/workflows/cd.yml
+```
+
+`CI` runs on pull requests and pushes to `main`/`develop`:
+
+- Python dependency installation and `pytest`
+- Frontend dependency installation and Vite production build
+- Docker Compose configuration validation for default and optional profiles
+- Report generator validation from the Word template
+
+`CD` runs on release tags matching `v*` or manually from GitHub Actions:
+
+- Builds FastAPI, frontend, trainer, Airflow, Spark, and MLflow Docker images
+- Pushes images to GitHub Container Registry on release tags
+- Supports manual image push with the `push_images` workflow input
+- Validates the full Compose bundle with `training` and `streaming` profiles
+
+Create a release build:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 ## Useful Commands
