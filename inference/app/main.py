@@ -124,12 +124,15 @@ def build_prediction_result(payload_dict: dict) -> dict:
     probability = model_loader.predict_probability(dataframe)
     prediction = 1 if probability >= 0.5 else 0
     risk_level = get_risk_level(probability)
+    model_metadata = model_loader.get_metadata()
 
     return {
         "prediction": prediction,
         "readmission_probability": probability,
         "risk_level": risk_level,
-        "model_name": "HospitalReadmissionModel",
+        "model_name": model_metadata["model_name"],
+        "model_version": model_metadata["model_version"],
+        "model_run_id": model_metadata["run_id"],
     }
 
 
@@ -385,6 +388,8 @@ def predict_patient_api(
         response_json=result,
         patient_id=patient_id,
         doctor_id=current_user["id"],
+        model_version=result.get("model_version"),
+        model_run_id=result.get("model_run_id"),
     )
 
     record_prediction_metrics(
@@ -438,7 +443,6 @@ def trigger_mlops_pipeline(
         "ingestion_dag",
         "etl_dag",
         "training_dag",
-        "data_triggered_retraining_dag",
         "db_triggered_retraining_dag",
     }
 
@@ -526,6 +530,8 @@ def predict(
         request_json=payload_dict,
         response_json=result,
         doctor_id=current_user["id"],
+        model_version=result.get("model_version"),
+        model_run_id=result.get("model_run_id"),
     )
 
     record_prediction_metrics(
@@ -560,7 +566,4 @@ def metrics():
 
 @app.get("/model-info")
 def model_info():
-    return {
-        "model_name": "HospitalReadmissionModel",
-        "model_uri": model_loader.model_uri,
-    }
+    return model_loader.get_metadata()

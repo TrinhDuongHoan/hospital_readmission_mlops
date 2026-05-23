@@ -13,6 +13,13 @@ class FakeModelLoader:
         self.seen_dataframe = dataframe
         return self.probability
 
+    def get_metadata(self):
+        return {
+            "model_name": "HospitalReadmissionModel",
+            "model_version": "3",
+            "run_id": "run-123",
+        }
+
 
 def test_build_prediction_result_uses_model_probability_and_risk_level(monkeypatch):
     fake_loader = FakeModelLoader(probability=0.72)
@@ -32,6 +39,8 @@ def test_build_prediction_result_uses_model_probability_and_risk_level(monkeypat
         "readmission_probability": 0.72,
         "risk_level": "high",
         "model_name": "HospitalReadmissionModel",
+        "model_version": "3",
+        "model_run_id": "run-123",
     }
 
 

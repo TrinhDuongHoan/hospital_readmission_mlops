@@ -59,10 +59,18 @@ try:
 except Exception:
     mlflow_stub = sys.modules.get("mlflow") or types.ModuleType("mlflow")
     mlflow_sklearn_stub = types.ModuleType("mlflow.sklearn")
+    mlflow_tracking_stub = types.ModuleType("mlflow.tracking")
+
+    class MlflowClientStub:
+        def get_latest_versions(self, *args, **kwargs):
+            return []
+
+    mlflow_tracking_stub.MlflowClient = MlflowClientStub
     mlflow_sklearn_stub.load_model = lambda *args, **kwargs: None
     mlflow_sklearn_stub.log_model = lambda *args, **kwargs: None
 
     mlflow_stub.sklearn = mlflow_sklearn_stub
+    mlflow_stub.tracking = mlflow_tracking_stub
     mlflow_stub.set_tracking_uri = lambda *args, **kwargs: None
     mlflow_stub.set_experiment = lambda *args, **kwargs: None
     mlflow_stub.log_params = lambda *args, **kwargs: None
@@ -71,3 +79,4 @@ except Exception:
 
     sys.modules["mlflow"] = mlflow_stub
     sys.modules["mlflow.sklearn"] = mlflow_sklearn_stub
+    sys.modules["mlflow.tracking"] = mlflow_tracking_stub

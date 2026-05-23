@@ -64,6 +64,8 @@ class PredictionResponse(BaseModel):
     readmission_probability: float
     risk_level: str
     model_name: str
+    model_version: Optional[str] = None
+    model_run_id: Optional[str] = None
 
 
 class PredictionLogResponse(BaseModel):
@@ -79,6 +81,7 @@ class PredictionLogResponse(BaseModel):
     risk_level: str
     model_name: str
     model_version: Optional[str] = None
+    model_run_id: Optional[str] = None
     created_at: datetime
 
 

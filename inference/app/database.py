@@ -115,6 +115,7 @@ def init_db() -> None:
 
         model_name VARCHAR(255) NOT NULL,
         model_version VARCHAR(100),
+        model_run_id VARCHAR(255),
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -128,6 +129,11 @@ def init_db() -> None:
             REFERENCES users(id)
             ON DELETE SET NULL
     );
+    """
+
+    add_prediction_model_run_id_column = """
+    ALTER TABLE prediction_logs
+    ADD COLUMN IF NOT EXISTS model_run_id VARCHAR(255);
     """
 
     create_retraining_state_table = """
@@ -167,6 +173,7 @@ def init_db() -> None:
         connection.execute(text(create_users_table))
         connection.execute(text(create_patients_table))
         connection.execute(text(create_prediction_logs_table))
+        connection.execute(text(add_prediction_model_run_id_column))
         connection.execute(text(create_retraining_state_table))
         connection.execute(text(create_retraining_runs_table))
         connection.execute(text(seed_retraining_state))
@@ -178,6 +185,7 @@ def save_prediction_log(
     patient_id: Optional[int] = None,
     doctor_id: Optional[int] = None,
     model_version: Optional[str] = None,
+    model_run_id: Optional[str] = None,
 ) -> None:
     query = """
     INSERT INTO prediction_logs (
@@ -188,7 +196,8 @@ def save_prediction_log(
         readmission_probability,
         risk_level,
         model_name,
-        model_version
+        model_version,
+        model_run_id
     )
     VALUES (
         :patient_id,
@@ -198,7 +207,8 @@ def save_prediction_log(
         :readmission_probability,
         :risk_level,
         :model_name,
-        :model_version
+        :model_version,
+        :model_run_id
     );
     """
 
@@ -214,6 +224,7 @@ def save_prediction_log(
                 "risk_level": response_json["risk_level"],
                 "model_name": response_json["model_name"],
                 "model_version": model_version,
+                "model_run_id": model_run_id,
             },
         )
 
@@ -232,6 +243,7 @@ def get_prediction_logs(limit: int = 50) -> List[Dict[str, Any]]:
         pl.risk_level,
         pl.model_name,
         pl.model_version,
+        pl.model_run_id,
         pl.created_at
     FROM prediction_logs pl
     LEFT JOIN users u ON u.id = pl.doctor_id
@@ -265,6 +277,7 @@ def get_prediction_logs_for_patient(
         pl.risk_level,
         pl.model_name,
         pl.model_version,
+        pl.model_run_id,
         pl.created_at
     FROM prediction_logs pl
     LEFT JOIN users u ON u.id = pl.doctor_id
@@ -309,6 +322,7 @@ def get_high_risk_patients(
             pl.risk_level,
             pl.model_name,
             pl.model_version,
+            pl.model_run_id,
             pl.created_at AS predicted_at
         FROM prediction_logs pl
         WHERE pl.patient_id IS NOT NULL
@@ -348,6 +362,7 @@ def get_high_risk_patients(
         lp.risk_level,
         lp.model_name,
         lp.model_version,
+        lp.model_run_id,
         lp.predicted_at
     FROM latest_predictions lp
     JOIN patients p ON p.id = lp.patient_id
