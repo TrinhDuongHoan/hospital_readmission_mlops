@@ -169,7 +169,7 @@ def draw_function_diagram() -> Path:
     subitems = [
         ["Create/Update/Delete", "Danh sách high-risk", "Lịch sử dự đoán"],
         ["FastAPI /predict", "MLflow Production model", "Redis + PostgreSQL log"],
-        ["Airflow DAGs", "Spark batch/streaming", "MLflow Registry"],
+        ["Airflow DAGs", "Spark batch + optional streaming", "MLflow Registry"],
         ["Prometheus metrics", "Grafana dashboard", "Alert rules"],
     ]
     for idx, (box, _, _) in enumerate(groups):
@@ -231,41 +231,41 @@ def draw_use_case() -> Path:
         draw.rectangle((mx - tw / 2 - 8, my - th / 2 - 5, mx + tw / 2 + 8, my + th / 2 + 5), fill="#ffffff")
         draw.text((mx - tw / 2, my - th / 2), label, font=FONT_18, fill=COLORS["line"])
 
-    actor(115, 215, "Bác sĩ")
-    actor(1485, 215, "Admin")
+    actor(115, 225, "Bác sĩ")
+    actor(1485, 225, "Admin")
 
-    draw.rounded_rectangle((270, 115, 1330, 835), radius=0, outline=COLORS["line"], width=4)
+    draw.rounded_rectangle((285, 115, 1315, 835), radius=0, outline=COLORS["line"], width=4)
     draw.text((555, 135), "Hospital Readmission Prediction MLOps", font=FONT_24_B, fill=COLORS["line"])
 
     cases = {
-        "login": ((455, 190, 735, 260), "Đăng nhập"),
-        "patients": ((455, 325, 735, 395), "Quản lý bệnh nhân"),
-        "predict": ((455, 460, 735, 530), "Dự đoán tái nhập viện"),
-        "history": ((455, 595, 735, 665), "Xem lịch sử dự đoán"),
-        "dashboard": ((880, 250, 1190, 320), "Xem dashboard tổng quan"),
-        "highrisk": ((880, 385, 1190, 455), "Xem DS nguy cơ cao"),
-        "pipeline": ((880, 520, 1190, 590), "Quản lý pipeline MLOps"),
-        "reload": ((880, 655, 1190, 725), "Reload Production model"),
+        "login": ((660, 185, 940, 255), "Đăng nhập"),
+        "patients": ((430, 330, 710, 400), "Quản lý bệnh nhân"),
+        "predict": ((430, 470, 710, 540), "Dự đoán tái nhập viện"),
+        "history": ((430, 610, 710, 680), "Xem lịch sử dự đoán"),
+        "dashboard": ((890, 330, 1170, 400), "Xem dashboard tổng quan"),
+        "highrisk": ((890, 470, 1170, 540), "Xem DS nguy cơ cao"),
+        "pipeline": ((890, 610, 1170, 680), "Quản lý pipeline MLOps"),
+        "reload": ((890, 735, 1170, 805), "Reload Production model"),
     }
 
     for box, label in cases.values():
         use_case(box, label)
 
-    association((185, 365), (455, 360))
-    association((185, 445), (455, 495))
-    association((185, 525), (455, 630))
-    association((1415, 350), (1190, 285))
-    association((1415, 430), (1190, 555))
-    association((1415, 510), (1190, 690))
+    association((185, 345), (430, 365))
+    association((185, 445), (430, 505))
+    association((185, 545), (430, 645))
+    association((1415, 345), (1170, 365))
+    association((1415, 465), (1170, 645))
+    association((1415, 565), (1170, 770))
 
-    dashed_arrow((595, 325), (595, 260), "<<include>>", (-115, -5))
-    dashed_arrow((595, 460), (595, 395), "<<include>>", (-115, -5))
-    dashed_arrow((595, 595), (595, 530), "<<include>>", (-115, -5))
-    dashed_arrow((880, 420), (735, 495), "<<extend>>", (-10, -28))
-    dashed_arrow((1190, 555), (1190, 320), "<<include>>", (95, -20))
-    dashed_arrow((1035, 655), (1035, 590), "<<extend>>", (115, -5))
+    dashed_arrow((570, 330), (735, 255), "<<include>>", (-20, -20))
+    dashed_arrow((570, 470), (570, 400), "<<include>>", (-112, -5))
+    dashed_arrow((570, 610), (570, 540), "<<include>>", (-112, -5))
+    dashed_arrow((890, 505), (710, 505), "<<extend>>", (0, -35))
+    dashed_arrow((1030, 330), (940, 255), "<<include>>", (90, -10))
+    dashed_arrow((1030, 735), (1030, 680), "<<extend>>", (112, -5))
 
-    legend = (350, 750, 795, 807)
+    legend = (350, 755, 820, 812)
     draw.rectangle(legend, fill="#ffffff", outline=COLORS["line"], width=2)
     draw.text((370, 768), "Nét liền: actor sử dụng chức năng; nét đứt: include/extend", font=FONT_18, fill=COLORS["line"])
     return save(image, "02_use_case.png")
@@ -361,31 +361,39 @@ def draw_erd() -> Path:
 def draw_dfd() -> Path:
     image, draw = new_canvas("Biểu đồ luồng dữ liệu batch, streaming và phục vụ model")
     nodes = [
-        ((60, 160, 315, 245), "CSV diabetic_data.csv", COLORS["gray"]),
-        ((60, 375, 315, 460), "Kafka patient-events", COLORS["blue"]),
-        ((430, 160, 700, 245), "Spark batch ETL", COLORS["orange"]),
-        ((430, 375, 700, 460), "Spark streaming ETL", COLORS["orange"]),
-        ((800, 160, 1070, 245), "Gold parquet", COLORS["green"]),
-        ((800, 375, 1070, 460), "Bronze parquet", COLORS["green"]),
-        ((1180, 160, 1500, 245), "Feature parquet", COLORS["green"]),
-        ((210, 670, 500, 755), "Training pipeline", COLORS["purple"]),
-        ((610, 670, 900, 755), "MLflow Registry", COLORS["purple"]),
-        ((1010, 670, 1300, 755), "FastAPI inference", COLORS["red"]),
-        ((1370, 670, 1550, 755), "React UI", COLORS["blue"]),
+        ((60, 150, 330, 235), "CSV diabetic_data.csv", COLORS["gray"]),
+        ((455, 150, 735, 235), "Spark batch ETL", COLORS["orange"]),
+        ((860, 150, 1135, 235), "Gold parquet", COLORS["green"]),
+        ((1245, 150, 1535, 235), "Offline feature parquet", COLORS["green"]),
+        ((1245, 360, 1535, 445), "Training pipeline", COLORS["purple"]),
+        ((860, 360, 1135, 445), "MLflow Registry\nProduction model", COLORS["purple"]),
+        ((455, 360, 735, 445), "FastAPI inference", COLORS["red"]),
+        ((60, 360, 330, 445), "React UI\nDoctor/Admin", COLORS["blue"]),
+        ((455, 600, 735, 685), "PostgreSQL + Redis\nprediction logs", COLORS["orange"]),
+        ((860, 600, 1135, 685), "Airflow DB retraining", COLORS["dark_blue"]),
+        ((455, 815, 735, 890), "Kafka patient-events", COLORS["gray"]),
+        ((860, 815, 1135, 890), "Spark Streaming\noptional profile", COLORS["gray"]),
+        ((1245, 815, 1535, 890), "Bronze parquet\noptional audit/demo", COLORS["gray"]),
     ]
     for box, label, color in nodes:
         draw_box(draw, box, label, color, fnt=FONT_18)
-    arrow(draw, (315, 200), (430, 200))
-    arrow(draw, (315, 418), (430, 418))
-    arrow(draw, (700, 200), (800, 200))
-    arrow(draw, (700, 418), (800, 418))
-    arrow(draw, (1070, 200), (1180, 200))
-    arrow(draw, (1180, 245), (500, 670), fill=COLORS["purple"])
-    arrow(draw, (500, 712), (610, 712), fill=COLORS["purple"])
-    arrow(draw, (900, 712), (1010, 712), fill=COLORS["purple"])
-    arrow(draw, (1300, 712), (1370, 712), fill=COLORS["blue"])
-    draw.text((380, 276), "Airflow điều phối ingestion, ETL, training, retraining", font=FONT_24_B, fill=COLORS["dark_blue"])
-    draw.text((1030, 500), "Prediction logs -> PostgreSQL / Redis -> Prometheus metrics", font=FONT_20, fill=COLORS["line"])
+
+    arrow(draw, (330, 192), (455, 192))
+    arrow(draw, (735, 192), (860, 192))
+    arrow(draw, (1135, 192), (1245, 192))
+    arrow(draw, (1390, 235), (1390, 360), fill=COLORS["purple"])
+    arrow(draw, (1245, 402), (1135, 402), fill=COLORS["purple"])
+    arrow(draw, (860, 402), (735, 402), fill=COLORS["purple"])
+    arrow(draw, (330, 402), (455, 402), fill=COLORS["blue"])
+    arrow(draw, (595, 445), (595, 600), fill=COLORS["orange"])
+    arrow(draw, (735, 642), (860, 642), fill=COLORS["orange"])
+    draw.line((1135, 642, 1390, 642), fill=COLORS["dark_blue"], width=4)
+    draw.line((1390, 642, 1390, 445), fill=COLORS["dark_blue"], width=4)
+    arrow(draw, (1390, 642), (1390, 445), fill=COLORS["dark_blue"])
+    arrow(draw, (735, 852), (860, 852), fill=COLORS["gray"])
+    arrow(draw, (1135, 852), (1245, 852), fill=COLORS["gray"])
+    draw.text((300, 285), "Airflow điều phối ingestion, ETL, training và DB-triggered retraining", font=FONT_24_B, fill=COLORS["dark_blue"])
+    draw.text((440, 775), "Luồng streaming là tùy chọn, không dùng làm trigger retraining tự động", font=FONT_20, fill=COLORS["line"])
     return save(image, "06_dfd.png")
 
 
@@ -416,34 +424,36 @@ def draw_algorithm() -> Path:
 
 def draw_retraining() -> Path:
     image, draw = new_canvas("Luồng tái huấn luyện tự động")
-    left = [
-        ((90, 150, 410, 225), "Data-triggered DAG\n30 phút/lần", COLORS["blue"]),
-        ((90, 300, 410, 375), "Đếm bronze parquet\n>= 50 bản ghi mới?", COLORS["blue"]),
-        ((90, 450, 410, 525), "Chuẩn bị streaming_training_data.csv", COLORS["green"]),
+    steps = [
+        ((70, 155, 355, 235), "Bác sĩ/Admin\ncập nhật actual_readmitted", COLORS["blue"]),
+        ((445, 155, 730, 235), "PostgreSQL\npatients + prediction_logs", COLORS["green"]),
+        ((820, 155, 1105, 235), "Airflow\nDB-triggered DAG", COLORS["dark_blue"]),
+        ((1210, 155, 1510, 235), "Đủ nhãn mới?\n>= RETRAIN_MIN_NEW_LABELS", COLORS["gray"]),
+        ((1210, 340, 1510, 420), "Skip\nchờ thêm nhãn", COLORS["gray"]),
+        ((820, 340, 1105, 420), "prepare_training_from_db\n-> db_training_data.csv", COLORS["green"]),
+        ((820, 520, 1105, 600), "training.train\ncandidate models", COLORS["orange"]),
+        ((430, 520, 715, 600), "MLflow runs\nmetrics + artifacts", COLORS["purple"]),
+        ((70, 520, 355, 600), "register_model\nso sánh Production", COLORS["purple"]),
+        ((430, 735, 715, 815), "FastAPI /reload-model\nModelLoader refresh", COLORS["red"]),
+        ((820, 735, 1105, 815), "Update retraining_state\nvà retraining_runs", COLORS["dark_blue"]),
     ]
-    right = [
-        ((1085, 150, 1440, 225), "DB-triggered DAG\n15 phút/lần", COLORS["purple"]),
-        ((1085, 300, 1440, 375), "Đếm patients có actual_readmitted\n>= 10 nhãn mới?", COLORS["purple"]),
-        ((1085, 450, 1440, 525), "Chuẩn bị db_training_data.csv", COLORS["green"]),
-    ]
-    middle = [
-        ((600, 455, 950, 530), "training.train", COLORS["orange"]),
-        ((600, 610, 950, 685), "register_model\nso sánh Production", COLORS["orange"]),
-        ((600, 765, 950, 840), "FastAPI /reload-model", COLORS["red"]),
-    ]
-    for group in [left, right, middle]:
-        for box, label, color in group:
-            draw_box(draw, box, label, color, fnt=FONT_18)
-    arrow(draw, (250, 225), (250, 300))
-    arrow(draw, (250, 375), (250, 450))
-    arrow(draw, (1260, 225), (1260, 300))
-    arrow(draw, (1260, 375), (1260, 450))
-    arrow(draw, (410, 490), (600, 490), fill=COLORS["green"])
-    arrow(draw, (1085, 490), (950, 490), fill=COLORS["green"])
-    arrow(draw, (775, 530), (775, 610), fill=COLORS["orange"])
-    arrow(draw, (775, 685), (775, 765), fill=COLORS["red"])
-    draw.text((455, 300), "Không đủ dữ liệu: skip_retraining", font=FONT_20, fill=COLORS["gray"])
-    draw.text((790, 300), "Không đủ nhãn: skip_retraining", font=FONT_20, fill=COLORS["gray"])
+    for box, label, color in steps:
+        draw_box(draw, box, label, color, fnt=FONT_18)
+
+    arrow(draw, (355, 195), (445, 195))
+    arrow(draw, (730, 195), (820, 195))
+    arrow(draw, (1105, 195), (1210, 195))
+    arrow(draw, (1360, 235), (1360, 340), fill=COLORS["gray"])
+    arrow(draw, (1210, 235), (1105, 380), fill=COLORS["green"])
+    arrow(draw, (962, 420), (962, 520), fill=COLORS["orange"])
+    arrow(draw, (820, 560), (715, 560), fill=COLORS["purple"])
+    arrow(draw, (430, 560), (355, 560), fill=COLORS["purple"])
+    draw.line((212, 600, 212, 775), fill=COLORS["red"], width=4)
+    arrow(draw, (212, 775), (430, 775), fill=COLORS["red"])
+    arrow(draw, (715, 775), (820, 775), fill=COLORS["dark_blue"])
+
+    draw.text((1385, 290), "Không", font=FONT_20, fill=COLORS["line"])
+    draw.text((1130, 310), "Có", font=FONT_20, fill=COLORS["line"])
     return save(image, "08_retraining.png")
 
 
@@ -459,7 +469,7 @@ def draw_mlops_diagram() -> Path:
         ((790, 410, 1050, 495), "Application\nReact UI + JWT API", COLORS["green"]),
         ((430, 410, 690, 495), "Prediction Logs\nPostgreSQL + Redis", COLORS["orange"]),
         ((70, 410, 330, 495), "Monitoring\nPrometheus + Grafana", COLORS["teal"]),
-        ((610, 675, 990, 770), "Orchestration\nAirflow DAGs: ingestion, ETL,\ntraining, retraining, reload", COLORS["dark_blue"]),
+        ((610, 675, 990, 770), "Orchestration\nAirflow DAGs: ingestion, ETL,\ntraining, DB retraining, reload", COLORS["dark_blue"]),
     ]
 
     for box, label, color in lifecycle:
@@ -477,24 +487,30 @@ def draw_mlops_diagram() -> Path:
     ]:
         arrow(draw, start, end)
 
-    arrow(draw, (800, 675), (800, 495), fill=COLORS["line"])
-    arrow(draw, (990, 722), (1325, 495), fill=COLORS["line"])
-    arrow(draw, (610, 722), (200, 495), fill=COLORS["line"])
-    arrow(draw, (990, 675), (1325, 240), fill=COLORS["line"])
+    draw.line((800, 675, 800, 585), fill=COLORS["line"], width=3)
+    draw.line((800, 585, 560, 585), fill=COLORS["line"], width=3)
+    arrow(draw, (560, 585), (560, 495), fill=COLORS["line"], width=3)
+    draw.line((990, 722, 1325, 722), fill=COLORS["line"], width=3)
+    draw.line((1325, 722, 1325, 495), fill=COLORS["line"], width=3)
+    arrow(draw, (1325, 722), (1325, 495), fill=COLORS["line"], width=3)
+    draw.line((610, 722, 200, 722), fill=COLORS["line"], width=3)
+    draw.line((200, 722, 200, 495), fill=COLORS["line"], width=3)
+    arrow(draw, (200, 722), (200, 495), fill=COLORS["line"], width=3)
 
-    draw.text((420, 300), "Champion model được chọn theo ROC-AUC và promote khi tốt hơn Production", font=FONT_20, fill=COLORS["line"])
-    draw.text((415, 560), "Dữ liệu vận hành và nhãn mới quay lại pipeline để tái huấn luyện", font=FONT_20, fill=COLORS["line"])
-    draw.arc((45, 105, 1535, 835), start=8, end=352, fill=COLORS["gray"], width=3)
+    draw.rectangle((360, 295, 1240, 340), fill="#ffffff")
+    draw.text((410, 305), "Champion model được chọn theo ROC-AUC và promote khi tốt hơn Production", font=FONT_20, fill=COLORS["line"])
+    draw.rectangle((370, 550, 1225, 595), fill="#ffffff")
+    draw.text((420, 560), "Dữ liệu vận hành và nhãn mới quay lại pipeline để tái huấn luyện", font=FONT_20, fill=COLORS["line"])
     return save(image, "09_mlops_diagram.png")
 
 
 def draw_deployment() -> Path:
     image, draw = new_canvas("Sơ đồ triển khai Docker Compose")
     groups = [
-        ("Data & Streaming", 60, 130, 475, 410, [("Kafka", "Zookeeper", "Kafka UI"), ("Spark Master", "Spark Worker", "Spark Streaming")], COLORS["blue"]),
-        ("ML & Storage", 555, 130, 955, 410, [("MLflow", "MinIO", "Trainer"), ("Models", "Reports", "DVC")], COLORS["purple"]),
+        ("Data & Streaming", 60, 130, 475, 410, [("Kafka", "Zookeeper", "Kafka UI"), ("Spark Master", "Spark Worker", "Streaming profile")], COLORS["blue"]),
+        ("ML & Storage", 555, 130, 955, 410, [("MLflow", "MinIO", "Trainer profile"), ("Models", "Reports", "DVC")], COLORS["purple"]),
         ("Application", 1035, 130, 1535, 410, [("FastAPI", "PostgreSQL", "Redis"), ("React Frontend", "Nginx", "Auth/JWT")], COLORS["green"]),
-        ("Orchestration", 170, 555, 690, 820, [("Airflow Webserver", "Airflow Scheduler", "DAGs"), ("Ingestion", "ETL", "Retraining")], COLORS["orange"]),
+        ("Orchestration", 170, 555, 690, 820, [("Airflow Webserver", "Airflow Scheduler", "DAGs"), ("Ingestion", "ETL", "DB Retraining")], COLORS["orange"]),
         ("Monitoring", 880, 555, 1430, 820, [("Prometheus", "Grafana", "Alert rules"), ("API metrics", "Latency", "Errors")], COLORS["red"]),
     ]
     for title, x1, y1, x2, y2, rows, color in groups:
@@ -765,7 +781,6 @@ def build_doc() -> None:
     doc = Document(str(TEMPLATE))
     clear_document(doc)
     add_cover(doc, logo_path)
-    add_cover(doc, logo_path)
 
     add_heading(doc, "LỜI CẢM ƠN", 1)
     add_p(doc, "Trước tiên, em xin gửi lời cảm ơn chân thành đến TS. Bùi Thanh Hùng, người đã định hướng và hỗ trợ em trong quá trình thực hiện đồ án cuối kì môn Công nghệ mới trong phát triển ứng dụng.")
@@ -796,7 +811,7 @@ def build_doc() -> None:
     add_heading(doc, "TÓM TẮT", 1)
     add_p(doc, "Tái nhập viện trong thời gian ngắn là một vấn đề quan trọng trong quản trị bệnh viện vì làm tăng chi phí điều trị, gây áp lực lên nhân lực y tế và phản ánh nguy cơ biến chứng sau xuất viện. Đồ án này xây dựng hệ thống MLOps dự đoán khả năng bệnh nhân tiểu đường tái nhập viện trong vòng dưới 30 ngày dựa trên dữ liệu lâm sàng, thông tin nhập viện, chẩn đoán và thuốc điều trị.")
     add_p(doc, "Về dữ liệu, project sử dụng tệp diabetic_data.csv gồm 101.766 lượt khám với 50 cột. Nhãn nhị phân được tạo từ cột readmitted, trong đó giá trị <30 được xem là ca tái nhập viện sớm. Pipeline xử lý dữ liệu loại bỏ một số cột thiếu nhiều hoặc ít hữu ích, chuẩn hóa giá trị thiếu, mã hóa biến phân loại và huấn luyện các mô hình ứng viên bằng scikit-learn.")
-    add_p(doc, "Về hệ thống, đồ án triển khai đầy đủ các thành phần MLOps: Kafka và Spark cho luồng dữ liệu batch/streaming, Airflow điều phối ingestion/ETL/training/retraining, MLflow và MinIO quản lý thí nghiệm cùng artifact mô hình, FastAPI phục vụ suy luận, PostgreSQL và Redis lưu log, React cung cấp giao diện nghiệp vụ, Prometheus và Grafana giám sát vận hành.")
+    add_p(doc, "Về hệ thống, đồ án triển khai đầy đủ các thành phần MLOps: Spark batch tạo dữ liệu gold và offline feature, Kafka/Spark Streaming là luồng ingestion tùy chọn, Airflow điều phối ingestion/ETL/training/DB-triggered retraining, MLflow và MinIO quản lý thí nghiệm cùng artifact mô hình, FastAPI phục vụ suy luận, PostgreSQL và Redis lưu log, React cung cấp giao diện nghiệp vụ, Prometheus và Grafana giám sát vận hành.")
     add_p(doc, "Kết quả hiện tại cho thấy Random Forest là mô hình champion, đạt ROC-AUC khoảng 0,648 trên tập kiểm thử. Dù chất lượng mô hình còn có thể cải thiện, hệ thống đã thể hiện được quy trình đầu cuối từ dữ liệu, huấn luyện, đăng ký mô hình, phục vụ dự đoán đến giám sát và tái huấn luyện.")
     doc.add_page_break()
 
@@ -854,7 +869,7 @@ def build_doc() -> None:
         "Hình 1.3: Biểu đồ hoạt động dự đoán và phản hồi",
         "Hình 1.4: Biểu đồ trình tự xử lý dự đoán",
         "Hình 1.5: Biểu đồ quan hệ dữ liệu PostgreSQL",
-        "Hình 1.6: Biểu đồ luồng dữ liệu batch, streaming và serving",
+        "Hình 1.6: Biểu đồ luồng dữ liệu batch, streaming tùy chọn và serving",
         "Hình 1.7: Thiết kế các giao diện chính",
         "Hình 1.8: Quy trình tiền xử lý, huấn luyện và lựa chọn mô hình",
         "Hình 1.9: Luồng tái huấn luyện tự động",
@@ -928,7 +943,7 @@ def build_doc() -> None:
     ])
 
     add_heading(doc, "1.7. Biểu đồ luồng dữ liệu", 2)
-    add_p(doc, "Luồng dữ liệu của project gồm cả batch và streaming. Dữ liệu CSV gốc có thể được xử lý bằng Spark batch thành tầng gold và feature parquet; đồng thời producer có thể phát lại các dòng CSV vào Kafka để Spark Streaming ghi vào bronze. Các tập dữ liệu này được dùng cho training và retraining.")
+    add_p(doc, "Luồng dữ liệu chính của project là batch/offline. Dữ liệu CSV gốc được xử lý bằng Spark batch thành tầng gold và offline feature parquet, sau đó được dùng cho training và đăng ký model. Luồng Kafka/Spark Streaming vẫn được giữ dưới dạng tùy chọn để minh họa ingestion gần thời gian thực và ghi bronze parquet, nhưng không còn là trigger tái huấn luyện tự động.")
     add_diagram(doc, diagrams[5], figure_titles[5])
 
     add_heading(doc, "1.8. Thiết kế giao diện", 2)
@@ -936,14 +951,14 @@ def build_doc() -> None:
     add_caption(doc, "Bảng 1.3: Các màn hình chính của giao diện", "table")
     add_table(doc, ["Màn hình", "Chức năng chính"], [
         ["Login", "Đăng nhập với tài khoản doctor01/doctor123 hoặc admin01/admin123"],
-        ["Dashboard", "Hiển thị tổng số dự đoán, xác suất trung bình, số ca positive và phân bố rủi ro"],
+        ["Dashboard", "Hiển thị thống kê nghiệp vụ, thông tin model và Grafana dashboard MLOps"],
         ["Doctor Overview", "Tổng quan bệnh nhân của bác sĩ và danh sách ưu tiên"],
         ["Patients", "Quản lý danh bạ bệnh nhân, xem chi tiết, dự đoán và lịch sử từng bệnh nhân"],
         ["Create Patient", "Nhập hồ sơ bệnh nhân mới và chạy dự đoán ngay sau khi tạo"],
         ["Predict", "Dự đoán trực tiếp từ form lâm sàng không cần tạo hồ sơ trước"],
         ["High Risk Patients", "Danh sách bệnh nhân có nguy cơ tái nhập viện cao"],
         ["Pipelines", "Xem trạng thái DAG và kích hoạt pipeline Airflow"],
-        ["Observability", "Nhúng Grafana, Prometheus, MLflow và Airflow vào giao diện quản trị"],
+        ["Observability", "Truy cập Prometheus, MLflow và Airflow trong giao diện quản trị"],
     ])
     add_diagram(doc, diagrams[10], figure_titles[6])
 
@@ -951,7 +966,7 @@ def build_doc() -> None:
     add_p(doc, "Pipeline huấn luyện đọc dữ liệu CSV, thay ký tự ? bằng missing value, tạo nhãn readmitted_binary, loại bỏ các cột encounter_id, patient_nbr, weight, payer_code, medical_specialty và readmitted. Sau đó dữ liệu được chia train/test theo tỷ lệ 80/20 có stratify để giữ phân bố nhãn.")
     add_p(doc, "Mô hình được xây dựng bằng sklearn Pipeline. Các cột số đi qua SimpleImputer(strategy='median') và StandardScaler; các cột phân loại đi qua SimpleImputer(fill_value='Unknown') và OneHotEncoder(handle_unknown='ignore'). Hai ứng viên trong cấu hình hiện tại là Random Forest và Logistic Regression, champion được chọn theo ROC-AUC.")
     add_diagram(doc, diagrams[6], figure_titles[7])
-    add_p(doc, "Cơ chế tái huấn luyện có hai nhánh. Nhánh thứ nhất dựa trên dữ liệu streaming mới trong tầng bronze; nhánh thứ hai dựa trên số bệnh nhân đã có nhãn actual_readmitted trong PostgreSQL. Sau khi mô hình mới tốt hơn Production theo ngưỡng MIN_IMPROVEMENT, script register_model sẽ đăng ký và promote model mới.")
+    add_p(doc, "Cơ chế tái huấn luyện được thiết kế theo hướng database-triggered. Khi đủ bệnh nhân hoặc prediction log đã có nhãn actual_readmitted trong PostgreSQL, Airflow chạy prepare_training_from_db để tạo tập db_training_data.csv, huấn luyện lại mô hình, so sánh với phiên bản Production theo ngưỡng MIN_IMPROVEMENT, đăng ký model mới nếu tốt hơn và gọi FastAPI reload model.")
     add_diagram(doc, diagrams[7], figure_titles[8])
     add_p(doc, "Sơ đồ MLOps tổng thể mô tả vòng đời khép kín của mô hình: dữ liệu được thu thập và xử lý, thí nghiệm được ghi nhận trong MLflow, model tốt nhất được đưa vào Registry, FastAPI phục vụ suy luận, kết quả vận hành được giám sát và dữ liệu mới quay lại pipeline tái huấn luyện.")
     add_diagram(doc, diagrams[8], figure_titles[9])
@@ -976,7 +991,7 @@ def build_doc() -> None:
         ["Frontend", "React 18, Vite, axios, lucide-react", "Giao diện bác sĩ/admin và gọi FastAPI"],
         ["Backend", "FastAPI, Pydantic, JWT, passlib", "API dự đoán, xác thực, phân quyền, quản lý bệnh nhân"],
         ["Dữ liệu", "PostgreSQL, Redis", "Lưu hồ sơ, prediction log, trạng thái retraining và cache log"],
-        ["Streaming", "Kafka, Zookeeper, Spark Streaming", "Phát lại dữ liệu bệnh nhân và ghi bronze parquet"],
+        ["Streaming", "Kafka, Zookeeper, Spark Streaming", "Luồng tùy chọn để phát lại dữ liệu bệnh nhân và ghi bronze parquet"],
         ["Batch ETL", "Apache Spark", "Làm sạch dữ liệu, tạo gold và feature parquet"],
         ["ML/MLOps", "scikit-learn, MLflow, MinIO, DVC, Airflow", "Huấn luyện, theo dõi thí nghiệm, lưu artifact và điều phối pipeline"],
         ["Monitoring", "Prometheus, Grafana", "Thu thập metric, dashboard và alert rules"],
@@ -990,7 +1005,7 @@ def build_doc() -> None:
     add_heading(doc, "2.2.2. Quản lý bệnh nhân và dự đoán", 3)
     add_p(doc, "Người dùng có thể tạo, xem, cập nhật và xóa bệnh nhân. Endpoint /patients/{patient_id}/predict lấy dữ liệu bệnh nhân đã lưu, chuẩn hóa tên cột cho khớp pipeline huấn luyện, gọi model Production trên MLflow và lưu kết quả vào Redis cùng PostgreSQL.")
     add_heading(doc, "2.2.3. Pipeline ingestion, ETL và feature engineering", 3)
-    add_p(doc, "ingestion_dag tạo Kafka topic patient-events và chạy producer phát lại dữ liệu CSV. etl_dag chạy Spark batch ETL để tạo data/gold/diabetic_gold.parquet, sau đó chạy feature_engineering.py để tạo data/features/offline/patient_features.parquet. Spark Streaming liên tục đọc topic patient-events và ghi bronze parquet.")
+    add_p(doc, "ingestion_dag tạo Kafka topic patient-events và chạy producer phát lại dữ liệu CSV. etl_dag chạy Spark batch ETL để tạo data/gold/diabetic_gold.parquet, sau đó chạy feature_engineering.py để tạo data/features/offline/patient_features.parquet. Spark Streaming được đóng gói trong profile tùy chọn để ghi bronze parquet khi cần demo ingestion liên tục.")
     add_heading(doc, "2.2.4. Huấn luyện, đăng ký và reload model", 3)
     add_p(doc, "training.train huấn luyện các mô hình ứng viên, log params/metrics/model vào MLflow và lưu champion vào models/model.pkl cùng reports/metrics.json. training.register_model kiểm tra artifact, so sánh metric với model Production hiện tại và promote phiên bản mới khi tốt hơn ngưỡng cấu hình.")
     add_heading(doc, "2.2.5. Giám sát và dashboard", 3)
@@ -1047,9 +1062,9 @@ def build_doc() -> None:
     ])
     add_p(doc, "Phụ lục B. Cấu trúc thư mục chính")
     add_bullets(doc, [
-        "airflow/: Dockerfile và các DAG ingestion, ETL, training, data-triggered retraining, db-triggered retraining.",
+        "airflow/: Dockerfile và các DAG ingestion, ETL, training, db-triggered retraining.",
         "spark/jobs/: Spark batch ETL, streaming ETL và feature engineering.",
-        "training/: pipeline huấn luyện, chuẩn bị dữ liệu retraining và đăng ký model.",
+        "training/: pipeline huấn luyện, chuẩn bị dữ liệu DB retraining và đăng ký model.",
         "inference/app/: FastAPI, auth, database, model loader, preprocessing và schema.",
         "frontend/src/: giao diện React cho dashboard, bệnh nhân, dự đoán, pipelines và observability.",
         "kafka/: producer, consumer và script tạo topic patient-events.",

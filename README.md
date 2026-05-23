@@ -1,10 +1,10 @@
 # Hospital Readmission Prediction MLOps
 
-End-to-end MLOps platform for predicting early hospital readmission risk for diabetic patients. The project combines batch and streaming data processing, model training and registry, production inference APIs, a React clinical dashboard, automated retraining workflows, and observability with Prometheus and Grafana.
+End-to-end MLOps platform for predicting early hospital readmission risk for diabetic patients. The project combines batch feature engineering, model training and registry, production inference APIs, a React clinical dashboard, database-triggered retraining workflows, optional streaming ingestion, and observability with Prometheus and Grafana.
 
 ## Overview
 
-The system predicts whether a patient is likely to be readmitted within 30 days based on clinical and admission features from the diabetes readmission dataset. It is designed as a practical MLOps project rather than a standalone notebook: models are trained, tracked, registered, served, monitored, and refreshed through reproducible pipelines.
+The system predicts whether a patient is likely to be readmitted within 30 days based on clinical and admission features from the diabetes readmission dataset. It is designed as a practical MLOps project rather than a standalone notebook: data is processed into offline features, models are trained and tracked, the champion model is registered, inference is served through an authenticated API, predictions are logged, and retraining workflows can refresh the deployed model.
 
 Current champion model:
 
@@ -24,23 +24,20 @@ Current champion model:
 - Role-based access with JWT authentication for doctors and admins
 - Prediction logging to PostgreSQL and Redis
 - Batch ETL and feature generation with Apache Spark
-- Streaming ingestion from CSV to Kafka and Spark Streaming bronze storage
+- Optional streaming ingestion from CSV to Kafka and Spark Streaming bronze storage
 - ML training with scikit-learn pipelines and MLflow experiment tracking
 - Model registration and Production promotion through MLflow Registry
-- Data-triggered and database-triggered retraining DAGs in Airflow
+- Database-triggered retraining DAG in Airflow from newly labeled patients
 - FastAPI Prometheus metrics and Grafana dashboards
 - React dashboard for doctors/admin users
 
 ## Architecture
 
 ```text
-CSV / Patient Events
+CSV Training Data
         |
         v
- Kafka + Spark Streaming  --->  Bronze Parquet
-        |
-        v
- Spark Batch ETL  --->  Gold Parquet  --->  Feature Dataset
+ Spark Batch ETL  --->  Gold Parquet  --->  Offline Feature Parquet
         |
         v
  Training Pipeline  --->  MLflow Tracking + MinIO Artifacts
@@ -49,10 +46,14 @@ CSV / Patient Events
  MLflow Model Registry: HospitalReadmissionModel/Production
         |
         v
- FastAPI Inference API  --->  PostgreSQL + Redis + Prometheus
+ FastAPI Inference API  --->  PostgreSQL + Redis Cache + Prometheus
         |
         v
  React Frontend + Grafana Dashboards
+
+Optional path:
+
+CSV Patient Events ---> Kafka ---> Spark Streaming ---> Bronze Parquet
 ```
 
 ## Tech Stack
@@ -64,7 +65,7 @@ CSV / Patient Events
 | ML | pandas, scikit-learn, joblib |
 | Tracking | MLflow, MinIO/S3 artifact storage |
 | Orchestration | Apache Airflow |
-| Data processing | Apache Spark, Spark Streaming |
+| Data processing | Apache Spark, optional Spark Streaming |
 | Messaging | Kafka, Zookeeper, Kafka UI |
 | Storage | PostgreSQL, Redis, Parquet |
 | Monitoring | Prometheus, Grafana alert rules/dashboard |
@@ -154,6 +155,15 @@ uvicorn inference.app.main:app --reload --host 0.0.0.0 --port 8000
 
 The local API reads configuration from environment variables or `.env`. For the full dependency stack, prefer Docker Compose.
 
+## Compose Profiles
+
+The default `docker compose up -d --build` command starts the core application, orchestration, batch processing, registry, storage, and monitoring services. Two heavier/demo-only services are kept behind profiles:
+
+| Profile | Service | Purpose |
+| --- | --- | --- |
+| `training` | `trainer` | One-shot raw CSV training and model registration |
+| `streaming` | `spark-streaming` | Continuous Kafka-to-bronze streaming demo |
+
 ## Service URLs
 
 | Service | URL |
@@ -177,16 +187,17 @@ Default infrastructure credentials:
 | Airflow | `admin` | `admin` |
 | Grafana | `admin` | `admin` |
 | MinIO | `minio` | `minio123` |
-| PostgreSQL | `mlops` | `mlops123` |
+| App PostgreSQL | `mlops` | `mlops123` |
+| Airflow PostgreSQL | `airflow` | `airflow` |
 
 ## Common Workflows
 
-### Train and Register the Model
+### Build Features, Train, and Register the Model
 
-The `trainer` service waits for MLflow, trains candidate models, logs metrics/artifacts, and registers the best model.
+The recommended training path is the Airflow `training_dag`. It runs Spark batch ETL, builds the offline feature parquet, trains candidate models, logs metrics/artifacts, and registers the best model.
 
 ```bash
-docker compose up trainer
+docker compose exec airflow-webserver airflow dags trigger training_dag
 ```
 
 Training behavior is controlled by:
@@ -199,6 +210,12 @@ The champion report is written to:
 
 ```text
 reports/metrics.json
+```
+
+For a lightweight baseline run that trains directly from the raw CSV, use the one-shot trainer profile:
+
+```bash
+docker compose --profile training up trainer
 ```
 
 ### Run Kafka Ingestion
@@ -214,6 +231,12 @@ The producer sends events to:
 
 ```text
 patient-events
+```
+
+The continuous Spark Streaming bronze writer is optional. Start it only when you want to demonstrate the streaming path:
+
+```bash
+docker compose --profile streaming up -d spark-streaming
 ```
 
 ### Run ETL and Feature Engineering
@@ -239,13 +262,7 @@ docker compose exec airflow-webserver airflow dags trigger training_dag
 
 ### Trigger Retraining
 
-Available retraining workflows:
-
-- `data_triggered_retraining_dag`: retrains when enough new bronze streaming records exist
-- `db_triggered_retraining_dag`: retrains when enough labeled patient records exist in PostgreSQL
-- `retraining_dag`: manual retraining workflow
-
-Example:
+Retraining is driven by newly labeled patients in PostgreSQL. When enough records have `actual_readmitted`, trigger:
 
 ```bash
 docker compose exec airflow-webserver airflow dags trigger db_triggered_retraining_dag
@@ -325,16 +342,20 @@ monitoring/grafana/dashboards/hospital_readmission_mlops.json
 
 The training pipeline performs:
 
-1. Load `data/diabetic_data.csv`
-2. Replace `?` with missing values
-3. Create binary target: `readmitted == "<30"`
-4. Drop high-missing or identifier columns
-5. Split train/test with stratification
-6. Apply numeric imputation/scaling and categorical one-hot encoding
-7. Train candidate models
-8. Select champion by ROC-AUC
-9. Log model and metrics to MLflow
-10. Register/promote a Production model when it improves over the current version
+1. Build gold data from `data/diabetic_data.csv` with Spark
+2. Write offline features to `data/features/offline/patient_features.parquet`
+3. Load either offline feature parquet or raw CSV training data
+4. Replace `?` with missing values and normalize feature names
+5. Create binary target: `readmitted == "<30"` when needed
+6. Drop metadata/high-missing columns that are not model features
+7. Split train/test with stratification
+8. Apply numeric imputation/scaling and categorical one-hot encoding
+9. Train candidate models
+10. Select champion by ROC-AUC
+11. Log model and metrics to MLflow
+12. Register/promote a Production model when it improves over the current version
+
+Retraining is intentionally based on labeled operational data in PostgreSQL. The Kafka/Spark Streaming path remains available as an ingestion demonstration, but it is not used as an automatic retraining trigger.
 
 Configured candidates:
 
@@ -405,7 +426,7 @@ View logs:
 ```bash
 docker compose logs -f fastapi
 docker compose logs -f airflow-scheduler
-docker compose logs -f spark-streaming
+docker compose --profile streaming logs -f spark-streaming
 ```
 
 Rebuild one service:
