@@ -1,0 +1,42 @@
+groups:
+  - name: hospital-readmission-api
+    rules:
+      - alert: FastAPIDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI inference service is down"
+          description: "Prometheus has not been able to scrape FastAPI for more than 1 minute."
+
+      - alert: PredictionErrorsDetected
+        expr: increase(prediction_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prediction errors detected"
+          description: "At least one prediction request failed in the last 5 minutes."
+
+      - alert: HighPredictionLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, source) (rate(prediction_request_latency_seconds_bucket[5m]))
+          ) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prediction latency is high"
+          description: "p95 prediction latency has been above 2 seconds for 2 minutes."
+
+      - alert: ModelReloadFailures
+        expr: increase(model_reload_total{status="error"}[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model reload failed"
+          description: "FastAPI failed to reload the registered MLflow model in the last 10 minutes."
