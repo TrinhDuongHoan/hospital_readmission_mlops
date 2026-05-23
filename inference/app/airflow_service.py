@@ -31,14 +31,9 @@ DAG_CONFIGS = [
         "description": "Train candidate models and register best model",
     },
     {
-        "dag_id": "data_triggered_retraining_dag",
-        "name": "Streaming Data Retraining",
-        "description": "Retrain model when enough new streaming data is available",
-    },
-    {
         "dag_id": "db_triggered_retraining_dag",
         "name": "DB-triggered Retraining",
-        "description": "Retrain when PostgreSQL prediction_logs has at least 50 new records",
+        "description": "Retrain when PostgreSQL has enough newly labeled patient records",
     },
 ]
 

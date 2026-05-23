@@ -11,6 +11,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     container_name: kafka
+    restart: on-failure
     depends_on:
       - zookeeper
     ports:
@@ -151,6 +152,8 @@ services:
       context: .
       dockerfile: training/Dockerfile
     container_name: trainer
+    profiles:
+      - training
     depends_on:
       mlflow:
         condition: service_healthy
@@ -200,6 +203,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+
+  airflow-postgres:
+    image: postgres:15
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
     
   fastapi:
     build:
@@ -209,14 +227,10 @@ services:
     depends_on:
       mlflow:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       minio:
         condition: service_started
       postgres:
         condition: service_healthy
-      airflow-webserver:
-        condition: service_started
     ports:
       - "8000:8000"
     env_file:
@@ -382,6 +396,8 @@ services:
       context: ./spark
       dockerfile: Dockerfile
     container_name: spark-streaming
+    profiles:
+      - streaming
     user: root
     depends_on:
       kafka-init:
@@ -414,6 +430,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      airflow-postgres:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
       spark-master:
         condition: service_started
     ports:
@@ -437,7 +457,7 @@ services:
       - RETRAIN_MIN_NEW_LABELS=10
       - FASTAPI_RELOAD_USERNAME=admin01
       - FASTAPI_RELOAD_PASSWORD=admin123
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://mlops:mlops123@postgres:5432/mlops
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_TOPIC=patient-events
       - PYTHONDONTWRITEBYTECODE=1
@@ -449,6 +469,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: >
       bash -c "
+      rm -f /opt/airflow/airflow-webserver.pid &&
       airflow db init &&
       airflow users create
       --username admin
@@ -497,7 +518,7 @@ services:
       - RETRAIN_MIN_NEW_LABELS=10
       - FASTAPI_RELOAD_USERNAME=admin01
       - FASTAPI_RELOAD_PASSWORD=admin123
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://mlops:mlops123@postgres:5432/mlops
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_TOPIC=patient-events
       - PYTHONDONTWRITEBYTECODE=1
@@ -507,7 +528,11 @@ services:
       - ./:/opt/project
       - ./airflow/dags:/opt/airflow/dags
       - /var/run/docker.sock:/var/run/docker.sock
-    command: airflow scheduler
+    command: >
+      bash -c "
+      rm -f /opt/airflow/airflow-scheduler.pid &&
+      airflow scheduler
+      "
     healthcheck:
       test:
         [
@@ -522,5 +547,6 @@ services:
 volumes:
   minio_data:
   airflow_home:
+  airflow_postgres_data:
   postgres_data:
   grafana_data:
