@@ -22,7 +22,6 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from xgboost import XGBClassifier
 
 
 DEFAULT_CONFIG_PATH = "training/config.yaml"
@@ -68,11 +67,7 @@ def configure_mlflow_artifact_store(config: dict) -> None:
 
 def load_data(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
-
-    # Dataset diabetic_data.csv dùng "?" để biểu diễn missing value
     df = df.replace("?", pd.NA)
-
-    # Target: tái nhập viện trong vòng 30 ngày
     df["readmitted_binary"] = (df["readmitted"] == "<30").astype(int)
 
     drop_cols = [
@@ -92,7 +87,6 @@ def load_data(csv_path: str) -> pd.DataFrame:
 
     df = df.drop(columns=existing_drop_cols)
 
-    # Bỏ các dòng thiếu những cột quan trọng
     df = df.dropna(
         subset=[
             "race",
@@ -101,22 +95,17 @@ def load_data(csv_path: str) -> pd.DataFrame:
         ]
     )
 
-    # Tách categorical và numerical columns
     categorical_cols = df.select_dtypes(include=["object"]).columns.tolist()
     numeric_cols = df.select_dtypes(exclude=["object"]).columns.tolist()
 
-    # Không xử lý target như feature
     if "readmitted_binary" in numeric_cols:
         numeric_cols.remove("readmitted_binary")
 
-    # Fill missing categorical bằng chuỗi cố định
     for column_name in categorical_cols:
         df[column_name] = df[column_name].astype("string").fillna("Unknown").astype(str)
 
-    # Fill missing numeric bằng median
     for column_name in numeric_cols:
         df[column_name] = pd.to_numeric(df[column_name], errors="coerce")
-        df[column_name] = df[column_name].fillna(df[column_name].median())
 
     return df
 
@@ -165,6 +154,14 @@ def build_estimator(candidate: dict, config: dict):
         )
 
     if candidate_type == "xgboost":
+        try:
+            from xgboost import XGBClassifier
+        except ImportError as exc:
+            raise RuntimeError(
+                "XGBoost is not installed. Install xgboost or remove the "
+                "xgboost candidate from training/config.yaml."
+            ) from exc
+
         xgboost_params = {
             "eval_metric": "logloss",
             "tree_method": "hist",
@@ -371,7 +368,7 @@ def main():
         "model_type": champion_result["model_type"],
         "metrics": champion_result["metrics"],
         "params": champion_result["params"],
-        "candidates": training_results,
+        "all_candidates": training_results,
     }
 
     with open(metrics_path, "w", encoding="utf-8") as file:

@@ -52,8 +52,8 @@ def main():
     _, X_test, _, y_test = train_test_split(
         X,
         y,
-        test_size=0.2,
-        random_state=42,
+        test_size=get_config_value(config, ["model", "test_size"], 0.2),
+        random_state=get_config_value(config, ["model", "random_state"], 42),
         stratify=y,
     )
 
