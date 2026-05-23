@@ -1,11 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Brain,
   Database,
+  ExternalLink,
+  Gauge,
+  RefreshCw,
   TrendingUp,
 } from "lucide-react";
 import { getDashboardStats, getModelInfo } from "../services/api";
+
+const grafanaDashboardUrl =
+  import.meta.env.VITE_GRAFANA_URL ||
+  "/tools/grafana/d/hospital-readmission-mlops/hospital-readmission-mlops?orgId=1&from=now-1h&to=now&refresh=10s&kiosk&var-cache=mlops-v3";
+
+const grafanaOpenUrl =
+  import.meta.env.VITE_GRAFANA_HOME_URL ||
+  "/tools/grafana/d/hospital-readmission-mlops/hospital-readmission-mlops?orgId=1&from=now-1h&to=now&refresh=10s&kiosk&var-cache=mlops-v3";
 
 function StatCard({ title, value, subtitle, icon: Icon }) {
   return (
@@ -24,6 +35,12 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [modelInfo, setModelInfo] = useState(null);
   const [error, setError] = useState("");
+  const [frameVersion, setFrameVersion] = useState(Date.now());
+
+  const grafanaFrameUrl = useMemo(() => {
+    const separator = grafanaDashboardUrl.includes("?") ? "&" : "?";
+    return `${grafanaDashboardUrl}${separator}frameVersion=${frameVersion}`;
+  }, [frameVersion]);
 
   async function loadData() {
     try {
@@ -147,8 +164,56 @@ export default function Dashboard() {
             <p>Model name</p>
             <strong>{modelInfo?.model_name || "HospitalReadmissionModel"}</strong>
 
+            <p>Model version</p>
+            <strong>{modelInfo?.model_version || "N/A"}</strong>
+
             <p>Model URI</p>
             <code>{modelInfo?.model_uri || "N/A"}</code>
+          </div>
+        </div>
+      </div>
+
+      <div className="card observability-shell dashboard-monitoring">
+        <div className="observability-header">
+          <div>
+            <div className="observability-title">
+              <Gauge size={22} />
+              <h3>Grafana Monitoring</h3>
+            </div>
+            <p>Production metrics and inference health</p>
+          </div>
+
+          <div className="observability-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => setFrameVersion(Date.now())}
+              title="Reload frame"
+            >
+              <RefreshCw size={16} />
+            </button>
+
+            <a
+              className="secondary-button"
+              href={grafanaOpenUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLink size={16} />
+              Open
+            </a>
+          </div>
+        </div>
+
+        <div className="observability-frame-wrap dashboard-frame-wrap">
+          <iframe
+            key={`grafana-${frameVersion}`}
+            src={grafanaFrameUrl}
+            title="Grafana monitoring dashboard"
+          />
+
+          <div className="frame-fallback">
+            <span>Grafana is loading...</span>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@ import {
   Activity,
   BarChart3,
   ExternalLink,
-  Gauge,
   GitBranch,
   LineChart,
   RefreshCw,
@@ -10,18 +9,6 @@ import {
 import { useMemo, useState } from "react";
 
 const services = {
-  grafana: {
-    key: "grafana",
-    name: "System Dashboards",
-    subtitle: "Grafana monitoring views",
-    icon: Gauge,
-    url:
-      import.meta.env.VITE_GRAFANA_URL ||
-      "/tools/grafana/d/hospital-readmission-mlops/hospital-readmission-mlops?orgId=1&from=now-1h&to=now&refresh=10s&kiosk&var-cache=mlops-v3",
-    openUrl:
-      import.meta.env.VITE_GRAFANA_HOME_URL ||
-      "/tools/grafana/d/hospital-readmission-mlops/hospital-readmission-mlops?orgId=1&from=now-1h&to=now&refresh=10s&kiosk&var-cache=mlops-v3",
-  },
   prometheus: {
     key: "prometheus",
     name: "System Metrics",
@@ -51,7 +38,7 @@ const services = {
 };
 
 export default function Observability({ serviceKey }) {
-  const activeService = services[serviceKey] || services.grafana;
+  const activeService = services[serviceKey] || services.prometheus;
   const ActiveIcon = activeService.icon;
   const [frameVersion, setFrameVersion] = useState(Date.now());
   const frameUrl = useMemo(() => {

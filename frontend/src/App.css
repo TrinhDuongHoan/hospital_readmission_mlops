@@ -361,6 +361,19 @@ button {
   border: 1px solid var(--border);
 }
 
+.dashboard-monitoring {
+  margin-top: 22px;
+}
+
+.dashboard-frame-wrap {
+  min-height: 560px;
+}
+
+.dashboard-frame-wrap iframe {
+  height: min(620px, calc(100vh - 260px));
+  min-height: 560px;
+}
+
 /* Forms */
 
 .form-card {

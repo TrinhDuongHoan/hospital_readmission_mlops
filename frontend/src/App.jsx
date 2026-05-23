@@ -4,7 +4,6 @@ import {
   BarChart3,
   ClipboardList,
   FilePlus2,
-  Gauge,
   GitBranch,
   LayoutDashboard,
   LineChart,
@@ -34,11 +33,6 @@ function getTabsByRole(role) {
         key: "history",
         label: "Prediction Logs",
         icon: ClipboardList,
-      },
-      {
-        key: "grafana",
-        label: "Dashboards",
-        icon: Gauge,
       },
       {
         key: "prometheus",
@@ -117,7 +111,7 @@ export default function App() {
       return <History />;
     }
 
-    if (["grafana", "prometheus", "mlflow", "airflow"].includes(activeTab)) {
+    if (["prometheus", "mlflow", "airflow"].includes(activeTab)) {
       return <Observability serviceKey={activeTab} />;
     }
 
