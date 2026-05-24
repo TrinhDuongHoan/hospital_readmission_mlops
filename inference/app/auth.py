@@ -43,6 +43,9 @@ def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
     if user is None:
         return None
 
+    if not user.get("is_active", True):
+        return None
+
     if not verify_password(password, user["password_hash"]):
         return None
 
@@ -100,6 +103,12 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found.",
+        )
+
+    if not user.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is disabled.",
         )
 
     return user

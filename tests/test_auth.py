@@ -38,6 +38,24 @@ def test_authenticate_user_validates_password(monkeypatch):
     assert auth.authenticate_user("doctor01", "wrong-password") is None
 
 
+def test_authenticate_user_rejects_disabled_user(monkeypatch):
+    password_hash = auth.hash_password("doctor123")
+
+    monkeypatch.setattr(
+        auth,
+        "get_user_by_username",
+        lambda username: {
+            "id": 1,
+            "username": username,
+            "password_hash": password_hash,
+            "role": "doctor",
+            "is_active": False,
+        },
+    )
+
+    assert auth.authenticate_user("doctor01", "doctor123") is None
+
+
 def test_create_access_token_contains_subject_and_role():
     token = auth.create_access_token(
         {

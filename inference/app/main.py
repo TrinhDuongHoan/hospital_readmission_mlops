@@ -21,6 +21,8 @@ from inference.app.database import (
     get_high_risk_patients,
     get_prediction_logs,
     get_prediction_logs_for_patient,
+    get_user_by_id,
+    get_user_by_username,
     init_db,
     create_patient,
     create_user,
@@ -28,7 +30,10 @@ from inference.app.database import (
     get_all_patients,
     get_patient_by_id,
     get_patients_for_doctor,
+    list_users,
     save_prediction_log,
+    set_user_active,
+    update_user,
     update_patient,
 )
 from inference.app.feature_service import feature_service
@@ -41,7 +46,10 @@ from inference.app.schemas import (
     PredictionResponse,
     LoginRequest,
     TokenResponse,
+    UserCreateRequest,
     UserResponse,
+    UserStatusRequest,
+    UserUpdateRequest,
     PatientCreateRequest,
     PatientUpdateRequest,
     PatientResponse,
@@ -49,6 +57,8 @@ from inference.app.schemas import (
 
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_USER_ROLES = {"doctor", "admin"}
 
 
 app = FastAPI(
@@ -207,6 +217,7 @@ def login(payload: LoginRequest):
             "username": user["username"],
             "full_name": user["full_name"],
             "role": user["role"],
+            "is_active": user.get("is_active", True),
         },
     }
 
@@ -218,7 +229,132 @@ def auth_me(current_user=Depends(get_current_user)):
         "username": current_user["username"],
         "full_name": current_user["full_name"],
         "role": current_user["role"],
+        "is_active": current_user.get("is_active", True),
     }
+
+
+def validate_user_role(role: str) -> None:
+    if role not in ALLOWED_USER_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be doctor or admin.",
+        )
+
+
+@app.get("/users", response_model=list[UserResponse])
+def list_users_api(
+    limit: int = Query(default=100, ge=1, le=500),
+    current_user=Depends(require_admin),
+):
+    return list_users(limit=limit)
+
+
+@app.post("/users", response_model=UserResponse)
+def create_user_api(
+    payload: UserCreateRequest,
+    current_user=Depends(require_admin),
+):
+    del current_user
+
+    username = payload.username.strip()
+    full_name = payload.full_name.strip() if payload.full_name else None
+
+    if not username:
+        raise HTTPException(
+            status_code=400,
+            detail="Username is required.",
+        )
+
+    if len(payload.password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must contain at least 6 characters.",
+        )
+
+    validate_user_role(payload.role)
+
+    if get_user_by_username(username) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Username already exists.",
+        )
+
+    return create_user(
+        username=username,
+        password_hash=hash_password(payload.password),
+        full_name=full_name,
+        role=payload.role,
+    )
+
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user_api(
+    user_id: int,
+    payload: UserUpdateRequest,
+    current_user=Depends(require_admin),
+):
+    existing_user = get_user_by_id(user_id)
+
+    if existing_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found.",
+        )
+
+    role = payload.role
+
+    if role is not None:
+        validate_user_role(role)
+
+    if user_id == current_user["id"] and role is not None and role != "admin":
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot remove admin role from your own account.",
+        )
+
+    password_hash = None
+    if payload.password:
+        if len(payload.password) < 6:
+            raise HTTPException(
+                status_code=400,
+                detail="Password must contain at least 6 characters.",
+            )
+        password_hash = hash_password(payload.password)
+
+    updated_user = update_user(
+        user_id=user_id,
+        full_name=payload.full_name.strip() if payload.full_name is not None else None,
+        role=role,
+        password_hash=password_hash,
+    )
+
+    return updated_user
+
+
+@app.patch("/users/{user_id}/status", response_model=UserResponse)
+def update_user_status_api(
+    user_id: int,
+    payload: UserStatusRequest,
+    current_user=Depends(require_admin),
+):
+    if user_id == current_user["id"] and not payload.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot disable your own account.",
+        )
+
+    updated_user = set_user_active(
+        user_id=user_id,
+        is_active=payload.is_active,
+    )
+
+    if updated_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found.",
+        )
+
+    return updated_user
 
 
 @app.post("/patients", response_model=PatientResponse)

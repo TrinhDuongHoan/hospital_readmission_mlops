@@ -109,6 +109,26 @@ class UserResponse(BaseModel):
     username: str
     full_name: Optional[str] = None
     role: str
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+
+
+class UserCreateRequest(BaseModel):
+    username: str
+    password: str
+    full_name: Optional[str] = None
+    role: str = "doctor"
+
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    password: Optional[str] = None
+
+
+class UserStatusRequest(BaseModel):
+    is_active: bool
+
 
 class PatientCreateRequest(BaseModel):
     race: str = "Caucasian"

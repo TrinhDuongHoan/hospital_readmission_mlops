@@ -9,6 +9,7 @@ import {
   LineChart,
   LogOut,
   ShieldAlert,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ import History from "./pages/History";
 import Login from "./pages/Login";
 import Observability from "./pages/Observability";
 import Patients from "./pages/Patients";
+import UsersPage from "./pages/Users";
 
 function getTabsByRole(role) {
   if (role === "admin") {
@@ -33,6 +35,11 @@ function getTabsByRole(role) {
         key: "history",
         label: "Prediction Logs",
         icon: ClipboardList,
+      },
+      {
+        key: "users",
+        label: "Users",
+        icon: UserCog,
       },
       {
         key: "prometheus",
@@ -109,6 +116,10 @@ export default function App() {
 
     if (activeTab === "history") {
       return <History />;
+    }
+
+    if (activeTab === "users") {
+      return <UsersPage currentUser={user} />;
     }
 
     if (["prometheus", "mlflow", "airflow"].includes(activeTab)) {

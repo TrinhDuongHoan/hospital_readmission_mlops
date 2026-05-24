@@ -759,6 +759,10 @@ tbody tr:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .user-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .patient-detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -793,6 +797,7 @@ tbody tr:hover {
   .two-columns,
   .result-grid,
   .form-grid,
+  .user-form-grid,
   .patient-card-grid,
   .patient-detail-grid,
   .risk-summary {
@@ -1244,6 +1249,15 @@ tbody tr:hover {
   padding-right: 8px;
 }
 
+.user-management-card {
+  max-width: 1180px;
+}
+
+.user-form-grid {
+  grid-template-columns: 1.1fr 1.2fr 180px 1fr;
+  margin-bottom: 18px;
+}
+
 .create-patient-card {
   max-width: 1180px;
 }
@@ -1572,6 +1586,86 @@ tbody tr:hover {
   color: var(--text-main);
   border-color: rgba(96, 165, 250, 0.4);
   background: rgba(59, 130, 246, 0.12);
+}
+
+.icon-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.danger-icon-button {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.danger-icon-button:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.danger-icon-button:disabled:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.success-icon-button {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.success-icon-button:hover {
+  background: rgba(34, 197, 94, 0.22);
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.role-pill.admin {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.role-pill.doctor {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.account-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-status-pill.active {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.account-status-pill.disabled {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.user-note {
+  display: inline-block;
+  margin-left: 8px;
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .modal-actions {

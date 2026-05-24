@@ -20,6 +20,7 @@ Current champion model:
 ## Key Features
 
 - Patient CRUD and clinical profile management
+- Admin user management for doctor/admin accounts
 - Readmission prediction from saved patients or direct clinical form input
 - Role-based access with JWT authentication for doctors and admins
 - Prediction logging to PostgreSQL and Redis
@@ -303,6 +304,10 @@ GET  /patients/{patient_id}/predictions
 Admin-only MLOps endpoints:
 
 ```text
+GET    /users
+POST   /users
+PUT    /users/{user_id}
+PATCH  /users/{user_id}/status
 GET  /prediction-logs
 GET  /dashboard-stats
 GET  /mlops/pipelines

@@ -32,6 +32,28 @@ export async function getMe() {
   return response.data;
 }
 
+export async function getUsers(limit = 100) {
+  const response = await api.get(`/users?limit=${limit}`);
+  return response.data;
+}
+
+export async function createUser(payload) {
+  const response = await api.post("/users", payload);
+  return response.data;
+}
+
+export async function updateUser(userId, payload) {
+  const response = await api.put(`/users/${userId}`, payload);
+  return response.data;
+}
+
+export async function setUserActive(userId, isActive) {
+  const response = await api.patch(`/users/${userId}/status`, {
+    is_active: isActive,
+  });
+  return response.data;
+}
+
 export async function getDashboardStats() {
   const response = await api.get("/dashboard-stats");
   return response.data;

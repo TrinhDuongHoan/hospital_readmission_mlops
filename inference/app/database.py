@@ -25,8 +25,14 @@ def init_db() -> None:
         password_hash VARCHAR(255) NOT NULL,
         full_name VARCHAR(255),
         role VARCHAR(50) NOT NULL DEFAULT 'doctor',
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """
+
+    add_user_is_active_column = """
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
     """
 
     create_patients_table = """
@@ -171,6 +177,7 @@ def init_db() -> None:
 
     with engine.begin() as connection:
         connection.execute(text(create_users_table))
+        connection.execute(text(add_user_is_active_column))
         connection.execute(text(create_patients_table))
         connection.execute(text(create_prediction_logs_table))
         connection.execute(text(add_prediction_model_run_id_column))
@@ -431,6 +438,7 @@ def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
         password_hash,
         full_name,
         role,
+        is_active,
         created_at
     FROM users
     WHERE username = :username;
@@ -445,10 +453,55 @@ def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
+def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
+    query = """
+    SELECT
+        id,
+        username,
+        full_name,
+        role,
+        is_active,
+        created_at
+    FROM users
+    WHERE id = :user_id;
+    """
+
+    with engine.begin() as connection:
+        row = connection.execute(
+            text(query),
+            {"user_id": user_id},
+        ).mappings().first()
+
+    return dict(row) if row else None
+
+
+def list_users(limit: int = 100) -> List[Dict[str, Any]]:
+    query = """
+    SELECT
+        id,
+        username,
+        full_name,
+        role,
+        is_active,
+        created_at
+    FROM users
+    ORDER BY created_at DESC, id DESC
+    LIMIT :limit;
+    """
+
+    with engine.begin() as connection:
+        rows = connection.execute(
+            text(query),
+            {"limit": limit},
+        ).mappings().all()
+
+    return [dict(row) for row in rows]
+
+
 def create_user(
     username: str,
     password_hash: str,
-    full_name: str,
+    full_name: Optional[str],
     role: str,
 ) -> Dict[str, Any]:
     query = """
@@ -456,13 +509,15 @@ def create_user(
         username,
         password_hash,
         full_name,
-        role
+        role,
+        is_active
     )
     VALUES (
         :username,
         :password_hash,
         :full_name,
-        :role
+        :role,
+        TRUE
     )
     ON CONFLICT (username)
     DO NOTHING
@@ -471,6 +526,7 @@ def create_user(
         username,
         full_name,
         role,
+        is_active,
         created_at;
     """
 
@@ -489,6 +545,88 @@ def create_user(
         return get_user_by_username(username)
 
     return dict(row)
+
+
+def update_user(
+    user_id: int,
+    full_name: Optional[str] = None,
+    role: Optional[str] = None,
+    password_hash: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    existing_user = get_user_by_id(user_id)
+
+    if existing_user is None:
+        return None
+
+    updates = []
+    params: Dict[str, Any] = {"user_id": user_id}
+
+    if full_name is not None:
+        updates.append("full_name = :full_name")
+        params["full_name"] = full_name
+
+    if role is not None:
+        updates.append("role = :role")
+        params["role"] = role
+
+    if password_hash is not None:
+        updates.append("password_hash = :password_hash")
+        params["password_hash"] = password_hash
+
+    if not updates:
+        return existing_user
+
+    query = f"""
+    UPDATE users
+    SET {", ".join(updates)}
+    WHERE id = :user_id
+    RETURNING
+        id,
+        username,
+        full_name,
+        role,
+        is_active,
+        created_at;
+    """
+
+    with engine.begin() as connection:
+        row = connection.execute(
+            text(query),
+            params,
+        ).mappings().first()
+
+    return dict(row) if row else None
+
+
+def set_user_active(user_id: int, is_active: bool) -> Optional[Dict[str, Any]]:
+    existing_user = get_user_by_id(user_id)
+
+    if existing_user is None:
+        return None
+
+    query = """
+    UPDATE users
+    SET is_active = :is_active
+    WHERE id = :user_id
+    RETURNING
+        id,
+        username,
+        full_name,
+        role,
+        is_active,
+        created_at;
+    """
+
+    with engine.begin() as connection:
+        row = connection.execute(
+            text(query),
+            {
+                "user_id": user_id,
+                "is_active": is_active,
+            },
+        ).mappings().first()
+
+    return dict(row) if row else None
 
 
 def create_patient(

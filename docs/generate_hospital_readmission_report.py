@@ -18,21 +18,34 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "docs" / "22636801_TranThaiHa.docx"
 OUT = ROOT / "docs" / "Hospital_Readmission_Prediction_Report.docx"
 DIAGRAM_DIR = ROOT / "docs" / "generated_diagrams"
+SOURCE_IMAGE_DIR = ROOT / "docs" / "images"
 METRICS_PATH = ROOT / "reports" / "metrics.json"
 LOGO_PATH = DIAGRAM_DIR / "iuh_logo.png"
 
 
+SOURCE_DIAGRAMS = {
+    "function": "ChatGPT Image 02_11_32 24 thg 5, 2026 (1).png",
+    "use_case": "ChatGPT Image 02_11_32 24 thg 5, 2026 (2).png",
+    "activity": "ChatGPT Image 02_11_32 24 thg 5, 2026 (3).png",
+    "sequence": "ChatGPT Image 02_11_32 24 thg 5, 2026 (4).png",
+    "class": "ChatGPT Image 02_11_33 24 thg 5, 2026 (5).png",
+    "dfd": "ChatGPT Image 02_11_33 24 thg 5, 2026 (6).png",
+    "erd": "ChatGPT Image 02_11_35 24 thg 5, 2026 (7).png",
+}
+
+
 COLORS = {
-    "blue": "#5f5f5f",
-    "dark_blue": "#1f1f1f",
-    "green": "#777777",
-    "orange": "#8f8f8f",
-    "red": "#3a3a3a",
-    "purple": "#6b6b6b",
-    "teal": "#4f4f4f",
-    "gray": "#9a9a9a",
-    "light": "#f2f2f2",
-    "line": "#202020",
+    "blue": "#1f5fbf",
+    "dark_blue": "#0f2b5f",
+    "green": "#237a3b",
+    "orange": "#d66a1f",
+    "red": "#b4232a",
+    "purple": "#6a3aa8",
+    "teal": "#13827f",
+    "yellow": "#c08a16",
+    "gray": "#8a8f98",
+    "light": "#f3f7fb",
+    "line": "#1f2937",
 }
 
 
@@ -131,6 +144,37 @@ def arrow(
     draw.polygon(points, fill=fill)
 
 
+def dashed_line(
+    draw: ImageDraw.ImageDraw,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    fill: str = "#202020",
+    width: int = 3,
+    dash: int = 16,
+    gap: int = 10,
+) -> None:
+    x1, y1 = start
+    x2, y2 = end
+    dx = x2 - x1
+    dy = y2 - y1
+    distance = max((dx * dx + dy * dy) ** 0.5, 1)
+    step = dash + gap
+    t = 0.0
+    while t < distance:
+        t2 = min(t + dash, distance)
+        draw.line(
+            (
+                x1 + dx * t / distance,
+                y1 + dy * t / distance,
+                x1 + dx * t2 / distance,
+                y1 + dy * t2 / distance,
+            ),
+            fill=fill,
+            width=width,
+        )
+        t += step
+
+
 def new_canvas(title: str, size: tuple[int, int] = (1600, 950)) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     image = Image.new("RGB", size, "#ffffff")
     draw = ImageDraw.Draw(image)
@@ -146,6 +190,12 @@ def save(image: Image.Image, name: str) -> Path:
     return path
 
 
+def prepare_source_diagram(key: str, output_name: str) -> Path:
+    source_path = SOURCE_IMAGE_DIR / SOURCE_DIAGRAMS[key]
+    image = Image.open(source_path).convert("RGB")
+    return save(image, output_name)
+
+
 def extract_logo() -> Path:
     DIAGRAM_DIR.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(TEMPLATE) as docx:
@@ -154,36 +204,133 @@ def extract_logo() -> Path:
 
 
 def draw_function_diagram() -> Path:
-    image, draw = new_canvas("Sơ đồ chức năng tổng quát")
-    root = (515, 110, 1085, 190)
-    draw_box(draw, root, "Hospital Readmission Prediction MLOps", COLORS["dark_blue"], fnt=FONT_22)
+    image = Image.new("RGB", (1200, 1500), "#ffffff")
+    draw = ImageDraw.Draw(image)
+
+    root = (350, 35, 850, 145)
+    draw_box(
+        draw,
+        root,
+        "Hệ thống\nHospital Readmission Prediction MLOps",
+        "#ffffff",
+        outline=COLORS["dark_blue"],
+        text_fill=COLORS["dark_blue"],
+        radius=16,
+        fnt=FONT_24_B,
+    )
+
     groups = [
-        ((70, 315, 430, 405), "Quản lý bệnh nhân\nCRUD hồ sơ, gán bác sĩ, cập nhật nhãn", COLORS["blue"]),
-        ((465, 315, 825, 405), "Dự đoán tái nhập viện\nNhập đặc trưng, suy luận, phân mức rủi ro", COLORS["green"]),
-        ((860, 315, 1220, 405), "MLOps pipeline\nETL, huấn luyện, đăng ký, reload model", COLORS["orange"]),
-        ((1255, 315, 1545, 405), "Quan sát hệ thống\nMetrics, dashboard, cảnh báo vận hành", COLORS["purple"]),
+        (
+            "Quản lý người dùng\n& bệnh nhân",
+            COLORS["blue"],
+            "#eef6ff",
+            [
+                "Đăng nhập / JWT",
+                "Quản lý bệnh nhân",
+                "Thêm / sửa / xoá hồ sơ",
+                "Theo dõi ca nguy cơ cao",
+                "Lịch sử dự đoán",
+            ],
+        ),
+        (
+            "Dự đoán\n& theo dõi",
+            COLORS["green"],
+            "#f0fbf0",
+            [
+                "Dự đoán readmission",
+                "Dự đoán từ hồ sơ đã lưu",
+                "Tính xác suất tái nhập viện",
+                "Phân loại mức rủi ro",
+                "Cập nhật kết quả",
+            ],
+        ),
+        (
+            "Dữ liệu\n& logging",
+            COLORS["orange"],
+            "#fff5ec",
+            [
+                "Lưu PostgreSQL",
+                "Redis cache",
+                "Prediction logs",
+                "Dashboard thống kê",
+                "Dữ liệu retraining",
+            ],
+        ),
+        (
+            "Quản trị\n& MLOps",
+            COLORS["purple"],
+            "#f7f0ff",
+            [
+                "Spark ETL",
+                "Airflow pipeline",
+                "MLflow Registry",
+                "Reload model",
+                "Prometheus / Grafana",
+            ],
+        ),
     ]
-    for box, text, color in groups:
-        arrow(draw, ((root[0] + root[2]) // 2, root[3]), ((box[0] + box[2]) // 2, box[1]))
-        draw_box(draw, box, text, color, fnt=FONT_20)
-    subitems = [
-        ["Create/Update/Delete", "Danh sách high-risk", "Lịch sử dự đoán"],
-        ["FastAPI /predict", "MLflow Production model", "Redis + PostgreSQL log"],
-        ["Airflow DAGs", "Spark batch + optional streaming", "MLflow Registry"],
-        ["Prometheus metrics", "Grafana dashboard", "Alert rules"],
-    ]
-    for idx, (box, _, _) in enumerate(groups):
-        x1, _, x2, _ = box
-        y = 475
-        for item in subitems[idx]:
-            item_box = (x1 + 25, y, x2 - 25, y + 62)
-            draw_box(draw, item_box, item, "#f2f2f2", outline="#808080", text_fill="#202020", radius=12, fnt=FONT_18)
-            y += 88
+
+    column_centers = [150, 450, 750, 1050]
+    header_y = 275
+    header_size = (240, 120)
+    item_size = (220, 90)
+    item_gap = 58
+    branch_y = 210
+    root_center_x = (root[0] + root[2]) // 2
+
+    draw.line((root_center_x, root[3], root_center_x, branch_y), fill=COLORS["dark_blue"], width=4)
+    draw.line((column_centers[0], branch_y, column_centers[-1], branch_y), fill=COLORS["dark_blue"], width=4)
+
+    for center_x, (title, color, fill, items) in zip(column_centers, groups):
+        header = (
+            center_x - header_size[0] // 2,
+            header_y,
+            center_x + header_size[0] // 2,
+            header_y + header_size[1],
+        )
+        arrow(draw, (center_x, branch_y), (center_x, header[1]), fill=color, width=4)
+        draw_box(
+            draw,
+            header,
+            title,
+            fill,
+            outline=color,
+            text_fill=color,
+            radius=14,
+            fnt=FONT_22,
+        )
+
+        line_x = header[0] + 18
+        line_top = header[3]
+        line_bottom = header[3] + len(items) * item_size[1] + (len(items) - 1) * item_gap + 35
+        draw.line((line_x, line_top, line_x, line_bottom), fill=color, width=4)
+
+        y = header[3] + 60
+        for item in items:
+            item_box = (
+                center_x - item_size[0] // 2,
+                y,
+                center_x + item_size[0] // 2,
+                y + item_size[1],
+            )
+            draw.line((line_x, y + item_size[1] // 2, item_box[0], y + item_size[1] // 2), fill=color, width=3)
+            draw_box(
+                draw,
+                item_box,
+                item,
+                "#ffffff",
+                outline=color,
+                text_fill=COLORS["line"],
+                radius=12,
+                fnt=FONT_18,
+            )
+            y += item_size[1] + item_gap
+
     return save(image, "01_function_diagram.png")
 
 
 def draw_use_case() -> Path:
-    image, draw = new_canvas("Biểu đồ trường hợp sử dụng")
+    image, draw = new_canvas("Biểu đồ trường hợp sử dụng", (1800, 1150))
 
     def actor(cx: int, y: int, label: str) -> None:
         draw.ellipse((cx - 32, y, cx + 32, y + 64), fill="#ffffff", outline=COLORS["line"], width=3)
@@ -194,82 +341,87 @@ def draw_use_case() -> Path:
         tw, _ = text_size(draw, label, FONT_24_B)
         draw.text((cx - tw / 2, y + 315), label, font=FONT_24_B, fill=COLORS["line"])
 
-    def use_case(box: tuple[int, int, int, int], label: str) -> None:
-        draw.ellipse(box, fill="#ffffff", outline=COLORS["line"], width=3)
+    def use_case(box: tuple[int, int, int, int], label: str, outline: str) -> None:
+        draw.rounded_rectangle(box, radius=0, fill="#ffffff", outline=outline, width=3)
         draw_centered_text(draw, box, label, FONT_18, COLORS["line"])
 
     def association(start: tuple[int, int], end: tuple[int, int]) -> None:
         draw.line((start, end), fill=COLORS["line"], width=3)
 
-    def dashed_arrow(
-        start: tuple[int, int],
-        end: tuple[int, int],
-        label: str,
-        label_offset: tuple[int, int] = (0, 0),
-    ) -> None:
+    def dashed_arrow(start: tuple[int, int], end: tuple[int, int], label: str, label_offset: tuple[int, int] = (0, 0)) -> None:
         x1, y1 = start
         x2, y2 = end
-        dx = x2 - x1
-        dy = y2 - y1
-        distance = max((dx * dx + dy * dy) ** 0.5, 1)
-        dash = 18
-        gap = 10
-        step = dash + gap
-        t = 0.0
-        while t < distance:
-            t2 = min(t + dash, distance)
-            sx = x1 + dx * t / distance
-            sy = y1 + dy * t / distance
-            ex = x1 + dx * t2 / distance
-            ey = y1 + dy * t2 / distance
-            draw.line((sx, sy, ex, ey), fill=COLORS["line"], width=2)
-            t += step
-        arrow(draw, (int(x1 + dx * 0.88), int(y1 + dy * 0.88)), end, width=2)
+        dashed_line(draw, start, end, COLORS["line"], width=2, dash=18, gap=10)
+        if abs(x2 - x1) >= abs(y2 - y1):
+            direction = 1 if x2 >= x1 else -1
+            points = [(x2, y2), (x2 - direction * 16, y2 - 9), (x2 - direction * 16, y2 + 9)]
+        else:
+            direction = 1 if y2 >= y1 else -1
+            points = [(x2, y2), (x2 - 9, y2 - direction * 16), (x2 + 9, y2 - direction * 16)]
+        draw.polygon(points, fill=COLORS["line"])
         mx = (x1 + x2) / 2 + label_offset[0]
         my = (y1 + y2) / 2 + label_offset[1]
         tw, th = text_size(draw, label, FONT_18)
         draw.rectangle((mx - tw / 2 - 8, my - th / 2 - 5, mx + tw / 2 + 8, my + th / 2 + 5), fill="#ffffff")
         draw.text((mx - tw / 2, my - th / 2), label, font=FONT_18, fill=COLORS["line"])
 
-    actor(115, 225, "Bác sĩ")
-    actor(1485, 225, "Admin")
+    actor(135, 300, "Bác sĩ")
+    actor(1665, 300, "Quản trị viên")
 
-    draw.rounded_rectangle((285, 115, 1315, 835), radius=0, outline=COLORS["line"], width=4)
-    draw.text((555, 135), "Hospital Readmission Prediction MLOps", font=FONT_24_B, fill=COLORS["line"])
+    boundary = (305, 110, 1500, 1030)
+    draw.rounded_rectangle(boundary, radius=0, outline=COLORS["dark_blue"], width=4)
+    draw.text((535, 135), "Hệ thống Hospital Readmission Prediction MLOps", font=FONT_28_B, fill=COLORS["dark_blue"])
 
-    cases = {
-        "login": ((660, 185, 940, 255), "Đăng nhập"),
-        "patients": ((430, 330, 710, 400), "Quản lý bệnh nhân"),
-        "predict": ((430, 470, 710, 540), "Dự đoán tái nhập viện"),
-        "history": ((430, 610, 710, 680), "Xem lịch sử dự đoán"),
-        "dashboard": ((890, 330, 1170, 400), "Xem dashboard tổng quan"),
-        "highrisk": ((890, 470, 1170, 540), "Xem DS nguy cơ cao"),
-        "pipeline": ((890, 610, 1170, 680), "Quản lý pipeline MLOps"),
-        "reload": ((890, 735, 1170, 805), "Reload Production model"),
+    doctor_cases = {
+        "login": ((410, 205, 730, 265), "Đăng nhập"),
+        "patients": ((410, 300, 730, 360), "Quản lý bệnh nhân"),
+        "patient_list": ((410, 395, 730, 455), "Xem danh sách bệnh nhân"),
+        "predict": ((410, 490, 770, 560), "Dự đoán readmission"),
+        "saved_predict": ((410, 595, 770, 665), "Dự đoán theo bệnh nhân đã lưu"),
+        "highrisk": ((410, 700, 770, 770), "Xem bệnh nhân nguy cơ cao"),
+        "history": ((410, 805, 770, 865), "Xem lịch sử dự đoán"),
+    }
+    admin_cases = {
+        "dashboard": ((1120, 205, 1440, 265), "Xem dashboard thống kê"),
+        "logs": ((1120, 305, 1440, 365), "Xem prediction logs"),
+        "pipeline": ((1120, 405, 1440, 465), "Theo dõi pipeline"),
+        "trigger": ((1120, 505, 1440, 565), "Trigger Airflow DAG"),
+        "reload": ((1120, 605, 1440, 665), "Reload model"),
+        "users": ((1120, 705, 1440, 765), "Quản lý người dùng"),
+    }
+    internal_cases = {
+        "prob": ((830, 470, 1040, 540), "Tính xác suất\ntái nhập viện"),
+        "risk": ((830, 585, 1040, 655), "Phân loại\nmức rủi ro"),
     }
 
-    for box, label in cases.values():
-        use_case(box, label)
+    for box, label in doctor_cases.values():
+        use_case(box, label, COLORS["dark_blue"])
+    for box, label in admin_cases.values():
+        use_case(box, label, COLORS["orange"])
+    for box, label in internal_cases.values():
+        use_case(box, label, COLORS["green"])
 
-    association((185, 345), (430, 365))
-    association((185, 445), (430, 505))
-    association((185, 545), (430, 645))
-    association((1415, 345), (1170, 365))
-    association((1415, 465), (1170, 645))
-    association((1415, 565), (1170, 770))
+    for box, _ in doctor_cases.values():
+        association((205, 460), (box[0], (box[1] + box[3]) // 2))
+    for box, _ in admin_cases.values():
+        association((1595, 460), (box[2], (box[1] + box[3]) // 2))
 
-    dashed_arrow((570, 330), (735, 255), "<<include>>", (-20, -20))
-    dashed_arrow((570, 470), (570, 400), "<<include>>", (-112, -5))
-    dashed_arrow((570, 610), (570, 540), "<<include>>", (-112, -5))
-    dashed_arrow((890, 505), (710, 505), "<<extend>>", (0, -35))
-    dashed_arrow((1030, 330), (940, 255), "<<include>>", (90, -10))
-    dashed_arrow((1030, 735), (1030, 680), "<<extend>>", (112, -5))
+    dashed_arrow((770, 525), (830, 505), "<<include>>", (10, -42))
+    dashed_arrow((770, 525), (830, 620), "<<include>>", (42, 18))
+    dashed_arrow((770, 630), (770, 560), "<<include>>", (-118, -2))
+    dashed_arrow((770, 735), (770, 665), "<<extend>>", (110, -2))
+    dashed_arrow((1025, 535), (1025, 495), "<<include>>", (110, 0))
+    dashed_arrow((1025, 635), (1025, 595), "<<include>>", (110, 0))
 
-    legend = (350, 755, 820, 812)
+    dashed_line(draw, (250, 1070), (1550, 1070), COLORS["purple"], width=3, dash=20, gap=12)
+    draw.polygon([(250, 1070), (268, 1060), (268, 1080)], fill=COLORS["purple"])
+    draw.text((615, 1042), "Quản trị viên giám sát, phân quyền và hỗ trợ luồng nghiệp vụ của bác sĩ", font=FONT_18, fill=COLORS["purple"])
+
+    legend = (365, 890, 835, 970)
     draw.rectangle(legend, fill="#ffffff", outline=COLORS["line"], width=2)
-    draw.text((370, 768), "Nét liền: actor sử dụng chức năng; nét đứt: include/extend", font=FONT_18, fill=COLORS["line"])
+    draw.text((385, 938), "Nét liền: actor sử dụng chức năng", font=FONT_18, fill=COLORS["line"])
+    draw.text((385, 970), "Nét đứt: include/extend hoặc tương tác giữa actor", font=FONT_18, fill=COLORS["line"])
     return save(image, "02_use_case.png")
-
 
 def draw_activity() -> Path:
     image, draw = new_canvas("Biểu đồ hoạt động dự đoán và ghi nhận phản hồi")
@@ -330,32 +482,154 @@ def draw_sequence() -> Path:
     return save(image, "04_sequence.png")
 
 
+def draw_class_diagram() -> Path:
+    image, draw = new_canvas("Biểu đồ lớp - Hospital Readmission Prediction MLOps", (1800, 1350))
+
+    def class_box(
+        box: tuple[int, int, int, int],
+        name: str,
+        attrs: list[str],
+        methods: list[str],
+        color: str,
+    ) -> None:
+        x1, y1, x2, y2 = box
+        draw.rounded_rectangle(box, radius=0, fill="#ffffff", outline=color, width=4)
+        draw.rectangle((x1, y1, x2, y1 + 52), fill="#eef4ff", outline=color, width=3)
+        draw.text((x1 + 18, y1 + 13), name, font=FONT_22, fill=color)
+        divider = y1 + 52 + max(130, len(attrs) * 30 + 18)
+        draw.line((x1, divider, x2, divider), fill=color, width=3)
+        y = y1 + 70
+        for attr in attrs:
+            draw.text((x1 + 18, y), attr, font=FONT_18, fill=COLORS["line"])
+            y += 30
+        y = divider + 18
+        for method in methods:
+            draw.text((x1 + 18, y), method, font=FONT_18, fill=COLORS["line"])
+            y += 30
+
+    class_box(
+        (60, 130, 380, 500),
+        "User",
+        ["- id: int PK", "- username: str", "- password_hash: str", "- full_name: str", "- role: doctor/admin", "- created_at: datetime"],
+        ["+ authenticate()", "+ get_current_user()", "+ require_admin()"],
+        COLORS["blue"],
+    )
+    class_box(
+        (500, 220, 850, 680),
+        "Patient",
+        ["- id: int PK", "- doctor_id: int FK", "- demographics", "- admission fields", "- diagnosis fields", "- medication fields", "- actual_readmitted: int?", "- created_at/updated_at"],
+        ["+ create_patient()", "+ update_patient()", "+ list_by_doctor()", "+ get_high_risk()"],
+        COLORS["green"],
+    )
+    class_box(
+        (965, 220, 1340, 690),
+        "PredictionLog",
+        ["- id: int PK", "- patient_id: int? FK", "- doctor_id: int? FK", "- request_json: JSONB", "- prediction: int", "- probability: float", "- risk_level: str", "- model_version/run_id", "- created_at: datetime"],
+        ["+ save_prediction_log()", "+ list_logs()", "+ list_by_patient()"],
+        COLORS["orange"],
+    )
+    class_box(
+        (1425, 150, 1740, 445),
+        "RetrainingState",
+        ["- id: int PK", "- last_trained_prediction_count", "- last_trained_patient_count", "- updated_at: datetime"],
+        ["+ read_state()", "+ update_state()"],
+        COLORS["purple"],
+    )
+    class_box(
+        (1425, 560, 1740, 1010),
+        "RetrainingRun",
+        ["- id: int PK", "- trigger_type: str", "- new_records: int", "- status: str", "- metric_name/value", "- started_at/ended_at", "- created_at: datetime"],
+        ["+ create_run()", "+ mark_success()", "+ mark_skipped()"],
+        COLORS["red"],
+    )
+    class_box(
+        (90, 890, 500, 1245),
+        "AuthService",
+        ["+ hash/verify password", "+ create JWT", "+ resolve role"],
+        ["+ login()", "+ require_doctor_or_admin()"],
+        COLORS["yellow"],
+    )
+    class_box(
+        (650, 890, 1090, 1275),
+        "PredictionService",
+        ["+ normalize payload", "+ build dataframe", "+ call ModelLoader", "+ classify risk"],
+        ["+ predict_direct()", "+ predict_patient()", "+ persist metrics/logs()"],
+        COLORS["teal"],
+    )
+    class_box(
+        (1260, 1060, 1665, 1330),
+        "AirflowService",
+        ["+ allowed DAG configs", "+ Airflow REST client", "+ run status mapping"],
+        ["+ get_pipeline_status()", "+ trigger_dag()"],
+        COLORS["dark_blue"],
+    )
+
+    arrow(draw, (380, 315), (500, 315), fill=COLORS["line"], width=3)
+    draw.text((410, 285), "1 - N", font=FONT_18, fill=COLORS["line"])
+    arrow(draw, (850, 430), (965, 430), fill=COLORS["line"], width=3)
+    draw.text((882, 400), "1 - N", font=FONT_18, fill=COLORS["line"])
+    arrow(draw, (380, 210), (965, 270), fill=COLORS["line"], width=3)
+    draw.text((650, 195), "doctor creates logs", font=FONT_18, fill=COLORS["line"])
+    dashed_line(draw, (295, 890), (250, 500), fill=COLORS["yellow"], width=3)
+    dashed_line(draw, (870, 890), (675, 680), fill=COLORS["teal"], width=3)
+    dashed_line(draw, (870, 890), (1150, 690), fill=COLORS["teal"], width=3)
+    dashed_line(draw, (1260, 1100), (1425, 930), fill=COLORS["dark_blue"], width=3)
+    dashed_line(draw, (1665, 1100), (1585, 445), fill=COLORS["dark_blue"], width=3)
+    draw.text((1305, 1015), "orchestrates", font=FONT_18, fill=COLORS["line"])
+
+    return save(image, "05_class_diagram.png")
+
+
 def draw_erd() -> Path:
-    image, draw = new_canvas("Biểu đồ quan hệ dữ liệu PostgreSQL")
+    image, draw = new_canvas("Biểu đồ quan hệ dữ liệu PostgreSQL", (1800, 1250))
     tables = {
-        "users": ((90, 145, 445, 330), ["id PK", "username UNIQUE", "password_hash", "full_name", "role"]),
-        "patients": ((610, 130, 1015, 395), ["id PK", "doctor_id FK", "race, gender, age", "admission ids", "clinical counters", "diagnoses", "medication flags", "actual_readmitted"]),
-        "prediction_logs": ((1135, 145, 1510, 365), ["id PK", "patient_id FK", "doctor_id FK", "request_json JSONB", "prediction", "probability", "risk_level"]),
-        "retraining_state": ((285, 610, 650, 760), ["id PK", "last_trained_prediction_count", "last_trained_patient_count", "updated_at"]),
-        "retraining_runs": ((880, 590, 1260, 790), ["id PK", "trigger_type", "new_records", "status", "metric_name/value", "started_at, ended_at"]),
+        "users": ((70, 135, 390, 390), ["id PK", "username UNIQUE", "password_hash", "full_name", "role", "created_at"]),
+        "patients": ((620, 120, 1050, 610), ["id PK", "doctor_id FK", "race, gender, age", "admission_type_id", "discharge_disposition_id", "admission_source_id", "time_in_hospital", "lab/procedure/med counts", "diagnoses", "medication flags", "actual_readmitted", "created_at, updated_at"]),
+        "prediction_logs": ((620, 745, 1050, 1165), ["id PK", "patient_id FK nullable", "doctor_id FK nullable", "request_json JSONB", "prediction", "readmission_probability", "risk_level", "model_name", "model_version", "model_run_id", "created_at"]),
+        "retraining_state": ((1300, 160, 1690, 390), ["id PK", "last_trained_prediction_count", "last_trained_patient_count", "updated_at"]),
+        "retraining_runs": ((1300, 650, 1690, 1010), ["id PK", "trigger_type", "new_records", "status", "metric_name", "metric_value", "started_at", "ended_at", "created_at"]),
+    }
+    table_colors = {
+        "users": COLORS["blue"],
+        "patients": COLORS["green"],
+        "prediction_logs": COLORS["orange"],
+        "retraining_state": COLORS["purple"],
+        "retraining_runs": COLORS["yellow"],
     }
     for name, (box, fields) in tables.items():
-        draw.rounded_rectangle(box, radius=16, fill="#f2f2f2", outline=COLORS["dark_blue"], width=3)
-        draw.rectangle((box[0], box[1], box[2], box[1] + 45), fill=COLORS["dark_blue"])
+        color = table_colors[name]
+        draw.rounded_rectangle(box, radius=8, fill="#ffffff", outline=color, width=3)
+        draw.rectangle((box[0], box[1], box[2], box[1] + 48), fill=color)
         draw.text((box[0] + 14, box[1] + 10), name, font=FONT_20, fill="#ffffff")
         y = box[1] + 62
         for field in fields:
             draw.text((box[0] + 18, y), field, font=FONT_18, fill=COLORS["line"])
             y += 28
-    arrow(draw, (445, 235), (610, 235), fill=COLORS["blue"])
-    draw.text((475, 205), "1 - N", font=FONT_18, fill=COLORS["blue"])
-    arrow(draw, (1015, 250), (1135, 250), fill=COLORS["green"])
-    draw.text((1042, 220), "1 - N", font=FONT_18, fill=COLORS["green"])
-    arrow(draw, (445, 300), (1135, 330), fill=COLORS["purple"])
-    draw.text((735, 325), "users tạo prediction_logs", font=FONT_18, fill=COLORS["purple"])
-    draw.line((650, 685, 880, 685), fill=COLORS["orange"], width=4)
-    draw.text((675, 650), "trạng thái tái huấn luyện", font=FONT_18, fill=COLORS["orange"])
-    return save(image, "05_erd.png")
+
+    draw.line((390, 260, 620, 260), fill=COLORS["line"], width=4)
+    draw.text((435, 225), "1", font=FONT_24_B, fill=COLORS["line"])
+    draw.text((575, 225), "N", font=FONT_24_B, fill=COLORS["line"])
+    draw.text((425, 285), "doctor_id", font=FONT_18, fill=COLORS["line"])
+
+    draw.line((835, 610, 835, 745), fill=COLORS["line"], width=4)
+    draw.text((805, 625), "1", font=FONT_24_B, fill=COLORS["line"])
+    draw.text((805, 705), "N", font=FONT_24_B, fill=COLORS["line"])
+
+    draw.line((230, 390, 230, 915), fill=COLORS["line"], width=4)
+    draw.line((230, 915, 620, 915), fill=COLORS["line"], width=4)
+    draw.text((245, 420), "1", font=FONT_24_B, fill=COLORS["line"])
+    draw.text((575, 880), "N", font=FONT_24_B, fill=COLORS["line"])
+    draw.text((265, 890), "doctor_id", font=FONT_18, fill=COLORS["line"])
+
+    dashed_line(draw, (1495, 390), (1495, 650), fill=COLORS["purple"], width=4)
+    draw.text((1515, 500), "logical run history", font=FONT_18, fill=COLORS["purple"])
+
+    legend = (70, 920, 390, 1040)
+    draw.rectangle(legend, fill="#ffffff", outline=COLORS["line"], width=2)
+    draw.text((92, 942), "PK: Primary Key", font=FONT_18, fill=COLORS["line"])
+    draw.text((92, 978), "FK: Foreign Key", font=FONT_18, fill=COLORS["line"])
+    draw.text((92, 1014), "Nét đứt: quan hệ logic", font=FONT_18, fill=COLORS["line"])
+    return save(image, "06_erd.png")
 
 
 def draw_dfd() -> Path:
@@ -394,7 +668,7 @@ def draw_dfd() -> Path:
     arrow(draw, (1135, 852), (1245, 852), fill=COLORS["gray"])
     draw.text((300, 285), "Airflow điều phối ingestion, ETL, training và DB-triggered retraining", font=FONT_24_B, fill=COLORS["dark_blue"])
     draw.text((440, 775), "Luồng streaming là tùy chọn, không dùng làm trigger retraining tự động", font=FONT_20, fill=COLORS["line"])
-    return save(image, "06_dfd.png")
+    return save(image, "07_dfd.png")
 
 
 def draw_algorithm() -> Path:
@@ -419,7 +693,7 @@ def draw_algorithm() -> Path:
     arrow(draw, (700, 565), (700, 710), fill=COLORS["red"])
     arrow(draw, (1110, 565), (890, 710), fill=COLORS["red"])
     draw.text((390, 350), "Metrics: accuracy, precision, recall, f1_score, roc_auc", font=FONT_22, fill=COLORS["line"])
-    return save(image, "07_algorithm.png")
+    return save(image, "08_algorithm.png")
 
 
 def draw_retraining() -> Path:
@@ -454,7 +728,7 @@ def draw_retraining() -> Path:
 
     draw.text((1385, 290), "Không", font=FONT_20, fill=COLORS["line"])
     draw.text((1130, 310), "Có", font=FONT_20, fill=COLORS["line"])
-    return save(image, "08_retraining.png")
+    return save(image, "09_retraining.png")
 
 
 def draw_mlops_diagram() -> Path:
@@ -501,7 +775,7 @@ def draw_mlops_diagram() -> Path:
     draw.text((410, 305), "Champion model được chọn theo ROC-AUC và promote khi tốt hơn Production", font=FONT_20, fill=COLORS["line"])
     draw.rectangle((370, 550, 1225, 595), fill="#ffffff")
     draw.text((420, 560), "Dữ liệu vận hành và nhãn mới quay lại pipeline để tái huấn luyện", font=FONT_20, fill=COLORS["line"])
-    return save(image, "09_mlops_diagram.png")
+    return save(image, "10_mlops_diagram.png")
 
 
 def draw_deployment() -> Path:
@@ -528,7 +802,7 @@ def draw_deployment() -> Path:
     arrow(draw, (690, 690), (880, 690))
     arrow(draw, (775, 555), (775, 410))
     draw.text((660, 450), "Airflow điều phối Spark, training và reload model", font=FONT_20, fill=COLORS["line"])
-    return save(image, "10_deployment.png")
+    return save(image, "11_deployment.png")
 
 
 def draw_ui_wireframe() -> Path:
@@ -549,7 +823,7 @@ def draw_ui_wireframe() -> Path:
             y += 105
         draw.rounded_rectangle((box[0] + 40, box[3] - 115, box[2] - 40, box[3] - 55), radius=12, fill="#eeeeee", outline="#808080")
         draw.text((box[0] + 65, box[3] - 98), "responsive React + Vite + lucide icons", font=FONT_18, fill=COLORS["line"])
-    return save(image, "11_ui_wireframe.png")
+    return save(image, "12_ui_wireframe.png")
 
 
 def draw_monitoring() -> Path:
@@ -577,7 +851,7 @@ def draw_monitoring() -> Path:
     for alert_text in alerts:
         draw.text((360, y), alert_text, font=FONT_20, fill=COLORS["line"])
         y += 42
-    return save(image, "12_monitoring.png")
+    return save(image, "13_monitoring.png")
 
 
 def clear_document(doc: Document) -> None:
@@ -766,15 +1040,16 @@ def build_doc() -> None:
     diagrams = [
         draw_function_diagram(),
         draw_use_case(),
-        draw_activity(),
-        draw_sequence(),
+        prepare_source_diagram("activity", "03_activity.png"),
+        prepare_source_diagram("sequence", "04_sequence.png"),
+        draw_class_diagram(),
         draw_erd(),
         draw_dfd(),
+        draw_ui_wireframe(),
         draw_algorithm(),
         draw_retraining(),
         draw_mlops_diagram(),
         draw_deployment(),
-        draw_ui_wireframe(),
         draw_monitoring(),
     ]
 
@@ -868,12 +1143,13 @@ def build_doc() -> None:
         "Hình 1.2: Biểu đồ trường hợp sử dụng",
         "Hình 1.3: Biểu đồ hoạt động dự đoán và phản hồi",
         "Hình 1.4: Biểu đồ trình tự xử lý dự đoán",
-        "Hình 1.5: Biểu đồ quan hệ dữ liệu PostgreSQL",
-        "Hình 1.6: Biểu đồ luồng dữ liệu batch, streaming tùy chọn và serving",
-        "Hình 1.7: Thiết kế các giao diện chính",
-        "Hình 1.8: Quy trình tiền xử lý, huấn luyện và lựa chọn mô hình",
-        "Hình 1.9: Luồng tái huấn luyện tự động",
-        "Hình 1.10: Sơ đồ MLOps tổng thể",
+        "Hình 1.5: Biểu đồ lớp của hệ thống",
+        "Hình 1.6: Biểu đồ quan hệ dữ liệu PostgreSQL",
+        "Hình 1.7: Biểu đồ luồng dữ liệu batch, streaming tùy chọn và serving",
+        "Hình 1.8: Thiết kế các giao diện chính",
+        "Hình 1.9: Quy trình tiền xử lý, huấn luyện và lựa chọn mô hình",
+        "Hình 1.10: Luồng tái huấn luyện tự động",
+        "Hình 1.11: Sơ đồ MLOps tổng thể",
         "Hình 2.1: Sơ đồ triển khai Docker Compose",
         "Hình 2.2: Sơ đồ quan sát và cảnh báo vận hành",
     ]
@@ -905,7 +1181,7 @@ def build_doc() -> None:
     add_p(doc, "Mục tiêu của đồ án không chỉ là huấn luyện mô hình, mà còn xây dựng một hệ thống vận hành mô hình theo chuẩn MLOps: dữ liệu được phiên bản hóa, pipeline huấn luyện có thể chạy lại, model được đăng ký trên MLflow, API phục vụ dự đoán có cơ chế reload model, log dự đoán được lưu lại để phân tích và kích hoạt tái huấn luyện.")
 
     add_heading(doc, "1.2. Sơ đồ chức năng tổng quát", 2)
-    add_p(doc, "Hệ thống được chia thành bốn nhóm chức năng chính: quản lý bệnh nhân, dự đoán tái nhập viện, MLOps pipeline và quan sát vận hành. Cách phân rã này giúp tách rõ chức năng nghiệp vụ cho bác sĩ với chức năng quản trị mô hình dành cho admin.")
+    add_p(doc, "Hệ thống được chia thành bốn nhóm chức năng chính: quản lý người dùng và bệnh nhân, dự đoán tái nhập viện, dữ liệu và logging, quản trị MLOps. Cách phân rã này giúp tách rõ chức năng nghiệp vụ cho bác sĩ với chức năng vận hành mô hình dành cho admin.")
     add_diagram(doc, diagrams[0], figure_titles[0])
 
     add_heading(doc, "1.3. Biểu đồ trường hợp sử dụng", 2)
@@ -931,8 +1207,9 @@ def build_doc() -> None:
     add_diagram(doc, diagrams[3], figure_titles[3])
 
     add_heading(doc, "1.6. Biểu đồ dữ liệu và lớp", 2)
-    add_p(doc, "Tầng dữ liệu quan hệ được hiện thực bằng PostgreSQL. Các bảng cốt lõi gồm users, patients, prediction_logs, retraining_state và retraining_runs. Bảng patients lưu đặc trưng đầu vào và nhãn thực tế nếu có; prediction_logs lưu kết quả suy luận; retraining_state và retraining_runs phục vụ quyết định tái huấn luyện.")
+    add_p(doc, "Tầng dữ liệu quan hệ được hiện thực bằng PostgreSQL. Ở mức thiết kế lớp, các thành phần User, Patient, PredictionLog, RetrainingState, RetrainingRun và các service nghiệp vụ thể hiện trách nhiệm chính của hệ thống. Ở mức dữ liệu, các bảng cốt lõi gồm users, patients, prediction_logs, retraining_state và retraining_runs.")
     add_diagram(doc, diagrams[4], figure_titles[4])
+    add_diagram(doc, diagrams[5], figure_titles[5])
     add_caption(doc, "Bảng 1.2: Các bảng dữ liệu chính", "table")
     add_table(doc, ["Bảng", "Vai trò trong hệ thống"], [
         ["users", "Lưu tài khoản, mật khẩu đã băm, họ tên và vai trò doctor/admin"],
@@ -944,7 +1221,7 @@ def build_doc() -> None:
 
     add_heading(doc, "1.7. Biểu đồ luồng dữ liệu", 2)
     add_p(doc, "Luồng dữ liệu chính của project là batch/offline. Dữ liệu CSV gốc được xử lý bằng Spark batch thành tầng gold và offline feature parquet, sau đó được dùng cho training và đăng ký model. Luồng Kafka/Spark Streaming vẫn được giữ dưới dạng tùy chọn để minh họa ingestion gần thời gian thực và ghi bronze parquet, nhưng không còn là trigger tái huấn luyện tự động.")
-    add_diagram(doc, diagrams[5], figure_titles[5])
+    add_diagram(doc, diagrams[6], figure_titles[6])
 
     add_heading(doc, "1.8. Thiết kế giao diện", 2)
     add_p(doc, "Giao diện được xây dựng bằng React và Vite. Các màn hình chính được thiết kế cho hai nhóm người dùng: bác sĩ thao tác với bệnh nhân và admin vận hành hệ thống MLOps. Giao diện sử dụng các khối thông tin ngắn, bảng danh sách và form lâm sàng để giảm thao tác lặp lại.")
@@ -960,16 +1237,16 @@ def build_doc() -> None:
         ["Pipelines", "Xem trạng thái DAG và kích hoạt pipeline Airflow"],
         ["Observability", "Truy cập Prometheus, MLflow và Airflow trong giao diện quản trị"],
     ])
-    add_diagram(doc, diagrams[10], figure_titles[6])
+    add_diagram(doc, diagrams[7], figure_titles[7])
 
     add_heading(doc, "1.9. Thiết kế giải thuật", 2)
     add_p(doc, "Pipeline huấn luyện đọc dữ liệu CSV, thay ký tự ? bằng missing value, tạo nhãn readmitted_binary, loại bỏ các cột encounter_id, patient_nbr, weight, payer_code, medical_specialty và readmitted. Sau đó dữ liệu được chia train/test theo tỷ lệ 80/20 có stratify để giữ phân bố nhãn.")
     add_p(doc, "Mô hình được xây dựng bằng sklearn Pipeline. Các cột số đi qua SimpleImputer(strategy='median') và StandardScaler; các cột phân loại đi qua SimpleImputer(fill_value='Unknown') và OneHotEncoder(handle_unknown='ignore'). Hai ứng viên trong cấu hình hiện tại là Random Forest và Logistic Regression, champion được chọn theo ROC-AUC.")
-    add_diagram(doc, diagrams[6], figure_titles[7])
+    add_diagram(doc, diagrams[8], figure_titles[8])
     add_p(doc, "Cơ chế tái huấn luyện được thiết kế theo hướng database-triggered. Khi đủ bệnh nhân hoặc prediction log đã có nhãn actual_readmitted trong PostgreSQL, Airflow chạy prepare_training_from_db để tạo tập db_training_data.csv, huấn luyện lại mô hình, so sánh với phiên bản Production theo ngưỡng MIN_IMPROVEMENT, đăng ký model mới nếu tốt hơn và gọi FastAPI reload model.")
-    add_diagram(doc, diagrams[7], figure_titles[8])
+    add_diagram(doc, diagrams[9], figure_titles[9])
     add_p(doc, "Sơ đồ MLOps tổng thể mô tả vòng đời khép kín của mô hình: dữ liệu được thu thập và xử lý, thí nghiệm được ghi nhận trong MLflow, model tốt nhất được đưa vào Registry, FastAPI phục vụ suy luận, kết quả vận hành được giám sát và dữ liệu mới quay lại pipeline tái huấn luyện.")
-    add_diagram(doc, diagrams[8], figure_titles[9])
+    add_diagram(doc, diagrams[10], figure_titles[10])
 
     add_heading(doc, "1.10. Thiết kế kiểm thử", 2)
     add_p(doc, "Kiểm thử hệ thống cần bao phủ cả logic học máy, API nghiệp vụ và vận hành MLOps. Vì hệ thống có nhiều service, kiểm thử tích hợp đặc biệt quan trọng để bảo đảm dữ liệu đi đúng từ giao diện, API, cơ sở dữ liệu đến dashboard giám sát.")
@@ -997,7 +1274,7 @@ def build_doc() -> None:
         ["Monitoring", "Prometheus, Grafana", "Thu thập metric, dashboard và alert rules"],
         ["Hạ tầng", "Docker Compose, Nginx", "Đóng gói service và reverse proxy cơ bản"],
     ])
-    add_diagram(doc, diagrams[9], figure_titles[10])
+    add_diagram(doc, diagrams[11], figure_titles[11])
 
     add_heading(doc, "2.2. Các chức năng đã hiện thực", 2)
     add_heading(doc, "2.2.1. Quản lý người dùng và phân quyền", 3)
@@ -1010,7 +1287,7 @@ def build_doc() -> None:
     add_p(doc, "training.train huấn luyện các mô hình ứng viên, log params/metrics/model vào MLflow và lưu champion vào models/model.pkl cùng reports/metrics.json. training.register_model kiểm tra artifact, so sánh metric với model Production hiện tại và promote phiên bản mới khi tốt hơn ngưỡng cấu hình.")
     add_heading(doc, "2.2.5. Giám sát và dashboard", 3)
     add_p(doc, "FastAPI expose /metrics theo chuẩn Prometheus, gồm tổng request dự đoán, latency, lỗi dự đoán, phân bố risk_level, histogram xác suất và số lần reload model. Grafana dashboard đọc Prometheus để hiển thị tình trạng API và chất lượng vận hành.")
-    add_diagram(doc, diagrams[11], figure_titles[11])
+    add_diagram(doc, diagrams[12], figure_titles[12])
 
     add_heading(doc, "2.3. Kết quả đánh giá mô hình", 2)
     add_p(doc, "Kết quả trong reports/metrics.json cho thấy Random Forest là champion hiện tại. Mô hình được chọn theo metric ROC-AUC với mode max. Các chỉ số còn khiêm tốn, đặc biệt precision thấp, phản ánh độ khó của bài toán do nhãn <30 chỉ chiếm khoảng 11,2% dữ liệu.")
