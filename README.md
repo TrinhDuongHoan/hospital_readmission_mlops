@@ -20,7 +20,7 @@ Current champion model:
 ## Key Features
 
 - Patient CRUD and clinical profile management
-- Admin user management for doctor/admin accounts
+- Admin user management for doctor/admin accounts, including temporary disable/enable
 - Readmission prediction from saved patients or direct clinical form input
 - Role-based access with JWT authentication for doctors and admins
 - Prediction logging to PostgreSQL and Redis
@@ -301,7 +301,7 @@ GET  /patients/high-risk
 GET  /patients/{patient_id}/predictions
 ```
 
-Admin-only MLOps endpoints:
+Admin-only endpoints:
 
 ```text
 GET    /users
@@ -314,6 +314,8 @@ GET  /mlops/pipelines
 POST /mlops/pipelines/{dag_id}/trigger
 POST /reload-model
 ```
+
+User accounts are soft-disabled rather than deleted. Disabled users remain in PostgreSQL for patient/log history integrity, but they cannot log in or continue using existing tokens.
 
 ## Monitoring
 
@@ -399,6 +401,7 @@ pytest
 The current tests cover:
 
 - Authentication and JWT helper behavior
+- Admin user management, including role updates and account disable/enable guards
 - Prediction API request handling with mocked model dependencies
 - Database helper functions using an in-memory SQLite setup
 - Preprocessing and feature preparation logic
@@ -410,7 +413,7 @@ The tests are designed to run without Docker, PostgreSQL, Kafka, Spark, Airflow,
 Expected result:
 
 ```text
-22 passed
+28 passed
 ```
 
 ## CI/CD
@@ -504,3 +507,27 @@ dvc pull data/diabetic_data.csv.dvc
 - This repository is intended for local MLOps experimentation and demonstration.
 - The current model metrics are suitable for project demonstration, not clinical deployment.
 - Before real-world use, the model should be validated with stronger evaluation, calibration, bias analysis, explainability, and clinical governance.
+
+
+# Note 
+docker compose exec postgres psql -U mlops -d mlops -c "
+UPDATE patients
+SET actual_readmitted = CASE WHEN id % 2 = 0 THEN 1 ELSE 0 END
+WHERE id IN (
+  SELECT p.id
+  FROM patients p
+  JOIN prediction_logs pl ON pl.patient_id = p.id
+  GROUP BY p.id
+  ORDER BY p.id DESC
+  LIMIT 10
+);
+
+UPDATE retraining_state
+SET last_trained_patient_count = 0,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 1;
+
+SELECT COUNT(*) AS labeled_patients
+FROM patients
+WHERE actual_readmitted IS NOT NULL;
+"

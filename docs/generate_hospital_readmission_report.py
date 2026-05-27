@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import zipfile
 from pathlib import Path
 from typing import Iterable
@@ -60,6 +61,7 @@ def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
+FONT_17 = font(17)
 FONT_18 = font(18)
 FONT_20 = font(20)
 FONT_22 = font(22)
@@ -204,82 +206,112 @@ def extract_logo() -> Path:
 
 
 def draw_function_diagram() -> Path:
-    image = Image.new("RGB", (1200, 1500), "#ffffff")
+    image = Image.new("RGB", (1620, 1700), "#ffffff")
     draw = ImageDraw.Draw(image)
 
-    root = (350, 35, 850, 145)
+    root = (380, 55, 1240, 155)
     draw_box(
         draw,
         root,
-        "Hệ thống\nHospital Readmission Prediction MLOps",
-        "#ffffff",
-        outline=COLORS["dark_blue"],
-        text_fill=COLORS["dark_blue"],
+        "Hệ thống dự đoán tái nhập viện bệnh nhân",
+        "#eef6ff",
+        outline=COLORS["line"],
+        text_fill=COLORS["line"],
         radius=16,
         fnt=FONT_24_B,
     )
 
     groups = [
         (
-            "Quản lý người dùng\n& bệnh nhân",
-            COLORS["blue"],
+            "1. Quản lý\nngười dùng và\nxác thực",
+            COLORS["line"],
             "#eef6ff",
             [
-                "Đăng nhập / JWT",
-                "Quản lý bệnh nhân",
-                "Thêm / sửa / xoá hồ sơ",
-                "Theo dõi ca nguy cơ cao",
-                "Lịch sử dự đoán",
+                "Đăng nhập",
+                "Cấp JWT token",
+                "Phân quyền Doctor/Admin",
+                "Xem thông tin người dùng",
             ],
         ),
         (
-            "Dự đoán\n& theo dõi",
-            COLORS["green"],
+            "2. Quản lý\nbệnh nhân",
+            COLORS["line"],
             "#f0fbf0",
             [
-                "Dự đoán readmission",
-                "Dự đoán từ hồ sơ đã lưu",
-                "Tính xác suất tái nhập viện",
-                "Phân loại mức rủi ro",
-                "Cập nhật kết quả",
+                "Thêm hồ sơ bệnh nhân",
+                "Xem danh sách bệnh nhân",
+                "Xem chi tiết bệnh nhân",
+                "Cập nhật hồ sơ bệnh nhân",
+                "Xóa hồ sơ bệnh nhân",
+                "Xem bệnh nhân nguy cơ cao",
             ],
         ),
         (
-            "Dữ liệu\n& logging",
-            COLORS["orange"],
-            "#fff5ec",
+            "3. Dự đoán tái\nnhập viện",
+            COLORS["line"],
+            "#fff7dc",
             [
-                "Lưu PostgreSQL",
-                "Redis cache",
-                "Prediction logs",
-                "Dashboard thống kê",
-                "Dữ liệu retraining",
+                "Nhập dữ liệu lâm sàng",
+                "Dự đoán từ hồ sơ bệnh nhân",
+                "Tiền xử lý dữ liệu",
+                "Tải model Production",
+                "Trả kết quả dự đoán",
+                "Ghi log dự đoán",
             ],
         ),
         (
-            "Quản trị\n& MLOps",
-            COLORS["purple"],
+            "4. Quản trị\nMLOps",
+            COLORS["line"],
             "#f7f0ff",
             [
-                "Spark ETL",
-                "Airflow pipeline",
-                "MLflow Registry",
-                "Reload model",
-                "Prometheus / Grafana",
+                "Xem trạng thái pipeline",
+                "Kích hoạt Airflow DAG",
+                "Chạy ETL",
+                "Huấn luyện model",
+                "Retraining model",
+                "Reload model Production",
+            ],
+        ),
+        (
+            "5. Quản lý dữ liệu\nvà huấn luyện\nmô hình",
+            COLORS["line"],
+            "#fff0dc",
+            [
+                "Đọc dữ liệu nguồn",
+                "Spark Batch ETL",
+                "Tạo dữ liệu Gold",
+                "Tạo Offline Feature",
+                "Train model",
+                "Đánh giá model",
+                "Ghi experiment vào MLflow",
+                "Lưu artifact vào MinIO",
+                "Promote model lên Production",
+            ],
+        ),
+        (
+            "6. Giám sát\nhệ thống",
+            COLORS["line"],
+            "#ffe7e7",
+            [
+                "Thu thập metrics từ FastAPI",
+                "Prometheus scrape metrics",
+                "Grafana dashboard",
+                "Cảnh báo hệ thống",
+                "Theo dõi request, latency, error và risk level",
             ],
         ),
     ]
 
-    column_centers = [150, 450, 750, 1050]
-    header_y = 275
-    header_size = (240, 120)
-    item_size = (220, 90)
-    item_gap = 58
-    branch_y = 210
+    column_centers = [135, 405, 675, 945, 1215, 1485]
+    header_y = 280
+    header_size = (220, 135)
+    item_size = (190, 90)
+    item_gap = 40
+    branch_y = 220
     root_center_x = (root[0] + root[2]) // 2
 
-    draw.line((root_center_x, root[3], root_center_x, branch_y), fill=COLORS["dark_blue"], width=4)
-    draw.line((column_centers[0], branch_y, column_centers[-1], branch_y), fill=COLORS["dark_blue"], width=4)
+    draw.line((root_center_x, root[3], root_center_x, branch_y), fill=COLORS["line"], width=3)
+    draw.line((column_centers[0], branch_y, column_centers[-1], branch_y), fill=COLORS["line"], width=3)
 
     for center_x, (title, color, fill, items) in zip(column_centers, groups):
         header = (
@@ -288,24 +320,24 @@ def draw_function_diagram() -> Path:
             center_x + header_size[0] // 2,
             header_y + header_size[1],
         )
-        arrow(draw, (center_x, branch_y), (center_x, header[1]), fill=color, width=4)
+        arrow(draw, (center_x, branch_y), (center_x, header[1]), fill=color, width=3)
         draw_box(
             draw,
             header,
             title,
             fill,
             outline=color,
-            text_fill=color,
+            text_fill=COLORS["line"],
             radius=14,
             fnt=FONT_22,
         )
 
-        line_x = header[0] + 18
+        line_x = header[0] + 10
         line_top = header[3]
         line_bottom = header[3] + len(items) * item_size[1] + (len(items) - 1) * item_gap + 35
-        draw.line((line_x, line_top, line_x, line_bottom), fill=color, width=4)
+        draw.line((line_x, line_top, line_x, line_bottom), fill=color, width=3)
 
-        y = header[3] + 60
+        y = header[3] + 55
         for item in items:
             item_box = (
                 center_x - item_size[0] // 2,
@@ -313,7 +345,7 @@ def draw_function_diagram() -> Path:
                 center_x + item_size[0] // 2,
                 y + item_size[1],
             )
-            draw.line((line_x, y + item_size[1] // 2, item_box[0], y + item_size[1] // 2), fill=color, width=3)
+            arrow(draw, (line_x, y + item_size[1] // 2), (item_box[0], y + item_size[1] // 2), fill=color, width=2)
             draw_box(
                 draw,
                 item_box,
@@ -322,7 +354,7 @@ def draw_function_diagram() -> Path:
                 outline=color,
                 text_fill=COLORS["line"],
                 radius=12,
-                fnt=FONT_18,
+                fnt=FONT_17,
             )
             y += item_size[1] + item_gap
 
@@ -330,97 +362,120 @@ def draw_function_diagram() -> Path:
 
 
 def draw_use_case() -> Path:
-    image, draw = new_canvas("Biểu đồ trường hợp sử dụng", (1800, 1150))
+    image = Image.new("RGB", (1700, 1250), "#ffffff")
+    draw = ImageDraw.Draw(image)
 
     def actor(cx: int, y: int, label: str) -> None:
-        draw.ellipse((cx - 32, y, cx + 32, y + 64), fill="#ffffff", outline=COLORS["line"], width=3)
-        draw.line((cx, y + 64, cx, y + 190), fill=COLORS["line"], width=4)
-        draw.line((cx - 68, y + 112, cx + 68, y + 112), fill=COLORS["line"], width=4)
-        draw.line((cx, y + 190, cx - 52, y + 292), fill=COLORS["line"], width=4)
-        draw.line((cx, y + 190, cx + 52, y + 292), fill=COLORS["line"], width=4)
+        draw.ellipse((cx - 28, y, cx + 28, y + 56), fill="#ffffff", outline="#111111", width=3)
+        draw.line((cx, y + 56, cx, y + 165), fill="#111111", width=4)
+        draw.line((cx - 58, y + 105, cx + 58, y + 105), fill="#111111", width=4)
+        draw.line((cx, y + 165, cx - 45, y + 265), fill="#111111", width=4)
+        draw.line((cx, y + 165, cx + 45, y + 265), fill="#111111", width=4)
         tw, _ = text_size(draw, label, FONT_24_B)
-        draw.text((cx - tw / 2, y + 315), label, font=FONT_24_B, fill=COLORS["line"])
+        draw.text((cx - tw / 2, y + 288), label, font=FONT_24_B, fill="#111111")
 
-    def use_case(box: tuple[int, int, int, int], label: str, outline: str) -> None:
-        draw.rounded_rectangle(box, radius=0, fill="#ffffff", outline=outline, width=3)
-        draw_centered_text(draw, box, label, FONT_18, COLORS["line"])
+    def use_case(box: tuple[int, int, int, int], label: str) -> None:
+        draw.ellipse(box, fill="#ffffff", outline="#111111", width=3)
+        draw_centered_text(draw, box, label, FONT_18, "#111111")
 
     def association(start: tuple[int, int], end: tuple[int, int]) -> None:
-        draw.line((start, end), fill=COLORS["line"], width=3)
+        draw.line((start, end), fill="#111111", width=3)
 
-    def dashed_arrow(start: tuple[int, int], end: tuple[int, int], label: str, label_offset: tuple[int, int] = (0, 0)) -> None:
+    def dashed_connector(
+        start: tuple[int, int],
+        end: tuple[int, int],
+        label: str = "",
+        label_offset: tuple[int, int] = (0, 0),
+        arrow_head: bool = True,
+    ) -> None:
         x1, y1 = start
         x2, y2 = end
-        dashed_line(draw, start, end, COLORS["line"], width=2, dash=18, gap=10)
-        if abs(x2 - x1) >= abs(y2 - y1):
-            direction = 1 if x2 >= x1 else -1
-            points = [(x2, y2), (x2 - direction * 16, y2 - 9), (x2 - direction * 16, y2 + 9)]
-        else:
-            direction = 1 if y2 >= y1 else -1
-            points = [(x2, y2), (x2 - 9, y2 - direction * 16), (x2 + 9, y2 - direction * 16)]
-        draw.polygon(points, fill=COLORS["line"])
-        mx = (x1 + x2) / 2 + label_offset[0]
-        my = (y1 + y2) / 2 + label_offset[1]
-        tw, th = text_size(draw, label, FONT_18)
-        draw.rectangle((mx - tw / 2 - 8, my - th / 2 - 5, mx + tw / 2 + 8, my + th / 2 + 5), fill="#ffffff")
-        draw.text((mx - tw / 2, my - th / 2), label, font=FONT_18, fill=COLORS["line"])
+        dashed_line(draw, start, end, "#111111", width=2, dash=14, gap=8)
+        if arrow_head:
+            angle = math.atan2(y2 - y1, x2 - x1)
+            head_len = 18
+            head_angle = math.radians(28)
+            for side in (-1, 1):
+                hx = x2 - head_len * math.cos(angle + side * head_angle)
+                hy = y2 - head_len * math.sin(angle + side * head_angle)
+                draw.line((x2, y2, hx, hy), fill="#111111", width=2)
+        if label:
+            mx = (x1 + x2) / 2 + label_offset[0]
+            my = (y1 + y2) / 2 + label_offset[1]
+            tw, th = text_size(draw, label, FONT_18)
+            draw.rectangle((mx - tw / 2 - 8, my - th / 2 - 5, mx + tw / 2 + 8, my + th / 2 + 5), fill="#ffffff")
+            draw.text((mx - tw / 2, my - th / 2), label, font=FONT_18, fill="#111111")
 
-    actor(135, 300, "Bác sĩ")
-    actor(1665, 300, "Quản trị viên")
+    boundary = (220, 25, 1480, 1205)
+    draw.rectangle(boundary, outline="#111111", width=4)
 
-    boundary = (305, 110, 1500, 1030)
-    draw.rounded_rectangle(boundary, radius=0, outline=COLORS["dark_blue"], width=4)
-    draw.text((535, 135), "Hệ thống Hospital Readmission Prediction MLOps", font=FONT_28_B, fill=COLORS["dark_blue"])
+    title = "Hospital Readmission Prediction MLOps"
+    title_width, _ = text_size(draw, title, FONT_28_B)
+    draw.text((850 - title_width / 2, 48), title, font=FONT_28_B, fill="#111111")
+
+    actor(88, 420, "Doctor")
+    actor(1612, 420, "Admin")
 
     doctor_cases = {
-        "login": ((410, 205, 730, 265), "Đăng nhập"),
-        "patients": ((410, 300, 730, 360), "Quản lý bệnh nhân"),
-        "patient_list": ((410, 395, 730, 455), "Xem danh sách bệnh nhân"),
-        "predict": ((410, 490, 770, 560), "Dự đoán readmission"),
-        "saved_predict": ((410, 595, 770, 665), "Dự đoán theo bệnh nhân đã lưu"),
-        "highrisk": ((410, 700, 770, 770), "Xem bệnh nhân nguy cơ cao"),
-        "history": ((410, 805, 770, 865), "Xem lịch sử dự đoán"),
+        "login": ((285, 110, 530, 205), "Đăng nhập"),
+        "profile": ((285, 245, 540, 335), "Xem thông tin cá nhân"),
+        "patients": ((285, 390, 565, 485), "Quản lý hồ sơ bệnh nhân"),
+        "predict_direct": ((275, 535, 575, 635), "Dự đoán từ form lâm sàng"),
+        "predict_saved": ((275, 695, 575, 795), "Dự đoán từ hồ sơ đã lưu"),
+        "history": ((285, 865, 565, 960), "Xem lịch sử dự đoán"),
+        "highrisk": ((285, 1010, 565, 1105), "Xem bệnh nhân nguy cơ cao"),
     }
     admin_cases = {
-        "dashboard": ((1120, 205, 1440, 265), "Xem dashboard thống kê"),
-        "logs": ((1120, 305, 1440, 365), "Xem prediction logs"),
-        "pipeline": ((1120, 405, 1440, 465), "Theo dõi pipeline"),
-        "trigger": ((1120, 505, 1440, 565), "Trigger Airflow DAG"),
-        "reload": ((1120, 605, 1440, 665), "Reload model"),
-        "users": ((1120, 705, 1440, 765), "Quản lý người dùng"),
+        "login": ((1145, 110, 1390, 205), "Đăng nhập"),
+        "dashboard": ((1130, 245, 1410, 335), "Xem dashboard thống kê"),
+        "all_patients": ((1130, 390, 1410, 485), "Xem toàn bộ bệnh nhân"),
+        "logs": ((1130, 535, 1410, 635), "Xem toàn bộ\nprediction logs"),
+        "users": ((1130, 695, 1410, 795), "Quản lý người dùng"),
+        "status": ((1130, 850, 1410, 950), "Bật / tắt tài khoản"),
+        "pipelines": ((1120, 990, 1420, 1090), "Theo dõi / kích hoạt pipeline"),
+        "reload": ((1120, 1120, 1420, 1200), "Reload model Production"),
     }
     internal_cases = {
-        "prob": ((830, 470, 1040, 540), "Tính xác suất\ntái nhập viện"),
-        "risk": ((830, 585, 1040, 655), "Phân loại\nmức rủi ro"),
+        "auth": ((725, 160, 975, 250), "Xác thực JWT"),
+        "preprocess": ((725, 385, 975, 480), "Tiền xử lý dữ liệu"),
+        "model": ((725, 535, 975, 635), "Tải model Production"),
+        "log": ((725, 695, 975, 795), "Ghi prediction log"),
+        "airflow": ((725, 860, 975, 960), "Airflow API"),
+        "registry": ((725, 1030, 975, 1130), "MLflow Registry"),
     }
 
     for box, label in doctor_cases.values():
-        use_case(box, label, COLORS["dark_blue"])
+        use_case(box, label)
     for box, label in admin_cases.values():
-        use_case(box, label, COLORS["orange"])
+        use_case(box, label)
     for box, label in internal_cases.values():
-        use_case(box, label, COLORS["green"])
+        use_case(box, label)
 
     for box, _ in doctor_cases.values():
-        association((205, 460), (box[0], (box[1] + box[3]) // 2))
+        association((148, 555), (box[0], (box[1] + box[3]) // 2))
     for box, _ in admin_cases.values():
-        association((1595, 460), (box[2], (box[1] + box[3]) // 2))
+        association((1552, 555), (box[2], (box[1] + box[3]) // 2))
 
-    dashed_arrow((770, 525), (830, 505), "<<include>>", (10, -42))
-    dashed_arrow((770, 525), (830, 620), "<<include>>", (42, 18))
-    dashed_arrow((770, 630), (770, 560), "<<include>>", (-118, -2))
-    dashed_arrow((770, 735), (770, 665), "<<extend>>", (110, -2))
-    dashed_arrow((1025, 535), (1025, 495), "<<include>>", (110, 0))
-    dashed_arrow((1025, 635), (1025, 595), "<<include>>", (110, 0))
+    def include(start: tuple[int, int], end: tuple[int, int], label_offset: tuple[int, int]) -> None:
+        dashed_connector(start, end, "<<include>>", label_offset)
 
-    dashed_line(draw, (250, 1070), (1550, 1070), COLORS["purple"], width=3, dash=20, gap=12)
-    draw.polygon([(250, 1070), (268, 1060), (268, 1080)], fill=COLORS["purple"])
-    draw.text((615, 1042), "Quản trị viên giám sát, phân quyền và hỗ trợ luồng nghiệp vụ của bác sĩ", font=FONT_18, fill=COLORS["purple"])
+    def extend(start: tuple[int, int], end: tuple[int, int], label_offset: tuple[int, int]) -> None:
+        dashed_connector(start, end, "<<extend>>", label_offset)
 
-    legend = (365, 890, 835, 970)
-    draw.rectangle(legend, fill="#ffffff", outline=COLORS["line"], width=2)
-    draw.text((385, 938), "Nét liền: actor sử dụng chức năng", font=FONT_18, fill=COLORS["line"])
-    draw.text((385, 970), "Nét đứt: include/extend hoặc tương tác giữa actor", font=FONT_18, fill=COLORS["line"])
+    # Include: use case always reuses a common service.
+    include((530, 158), (725, 205), (10, -42))
+    include((1145, 158), (975, 205), (-12, -42))
+    include((575, 585), (725, 430), (20, -25))
+    include((575, 585), (725, 585), (-70, -35))
+    include((575, 745), (725, 745), (-70, 34))
+    include((1120, 1040), (975, 912), (78, -8))
+    include((1120, 1160), (975, 1080), (0, -42))
+
+    # Extend: optional monitoring or management action extends a base use case.
+    extend((1130, 585), (975, 745), (76, -2))
+    extend((565, 912), (725, 745), (55, 15))
+    extend((1270, 850), (1270, 795), (112, -4))
+
     return save(image, "02_use_case.png")
 
 def draw_activity() -> Path:
@@ -508,10 +563,10 @@ def draw_class_diagram() -> Path:
             y += 30
 
     class_box(
-        (60, 130, 380, 500),
+        (60, 130, 380, 570),
         "User",
-        ["- id: int PK", "- username: str", "- password_hash: str", "- full_name: str", "- role: doctor/admin", "- created_at: datetime"],
-        ["+ authenticate()", "+ get_current_user()", "+ require_admin()"],
+        ["- id: int PK", "- username: str", "- password_hash: str", "- full_name: str", "- role: doctor/admin", "- is_active: bool", "- created_at: datetime"],
+        ["+ authenticate()", "+ get_current_user()", "+ require_admin()", "+ set_active()"],
         COLORS["blue"],
     )
     class_box(
@@ -545,7 +600,7 @@ def draw_class_diagram() -> Path:
     class_box(
         (90, 890, 500, 1245),
         "AuthService",
-        ["+ hash/verify password", "+ create JWT", "+ resolve role"],
+        ["+ hash/verify password", "+ create JWT", "+ resolve role", "+ reject disabled account"],
         ["+ login()", "+ require_doctor_or_admin()"],
         COLORS["yellow"],
     )
@@ -570,7 +625,7 @@ def draw_class_diagram() -> Path:
     draw.text((882, 400), "1 - N", font=FONT_18, fill=COLORS["line"])
     arrow(draw, (380, 210), (965, 270), fill=COLORS["line"], width=3)
     draw.text((650, 195), "doctor creates logs", font=FONT_18, fill=COLORS["line"])
-    dashed_line(draw, (295, 890), (250, 500), fill=COLORS["yellow"], width=3)
+    dashed_line(draw, (295, 890), (250, 570), fill=COLORS["yellow"], width=3)
     dashed_line(draw, (870, 890), (675, 680), fill=COLORS["teal"], width=3)
     dashed_line(draw, (870, 890), (1150, 690), fill=COLORS["teal"], width=3)
     dashed_line(draw, (1260, 1100), (1425, 930), fill=COLORS["dark_blue"], width=3)
@@ -583,7 +638,7 @@ def draw_class_diagram() -> Path:
 def draw_erd() -> Path:
     image, draw = new_canvas("Biểu đồ quan hệ dữ liệu PostgreSQL", (1800, 1250))
     tables = {
-        "users": ((70, 135, 390, 390), ["id PK", "username UNIQUE", "password_hash", "full_name", "role", "created_at"]),
+        "users": ((70, 135, 390, 420), ["id PK", "username UNIQUE", "password_hash", "full_name", "role", "is_active", "created_at"]),
         "patients": ((620, 120, 1050, 610), ["id PK", "doctor_id FK", "race, gender, age", "admission_type_id", "discharge_disposition_id", "admission_source_id", "time_in_hospital", "lab/procedure/med counts", "diagnoses", "medication flags", "actual_readmitted", "created_at, updated_at"]),
         "prediction_logs": ((620, 745, 1050, 1165), ["id PK", "patient_id FK nullable", "doctor_id FK nullable", "request_json JSONB", "prediction", "readmission_probability", "risk_level", "model_name", "model_version", "model_run_id", "created_at"]),
         "retraining_state": ((1300, 160, 1690, 390), ["id PK", "last_trained_prediction_count", "last_trained_patient_count", "updated_at"]),
@@ -707,7 +762,7 @@ def draw_retraining() -> Path:
         ((820, 340, 1105, 420), "prepare_training_from_db\n-> db_training_data.csv", COLORS["green"]),
         ((820, 520, 1105, 600), "training.train\ncandidate models", COLORS["orange"]),
         ((430, 520, 715, 600), "MLflow runs\nmetrics + artifacts", COLORS["purple"]),
-        ((70, 520, 355, 600), "register_model\nso sánh Production", COLORS["purple"]),
+        ((70, 520, 355, 600), "register_model\nregister v1, v2...", COLORS["purple"]),
         ((430, 735, 715, 815), "FastAPI /reload-model\nModelLoader refresh", COLORS["red"]),
         ((820, 735, 1105, 815), "Update retraining_state\nvà retraining_runs", COLORS["dark_blue"]),
     ]
@@ -809,7 +864,7 @@ def draw_ui_wireframe() -> Path:
     image, draw = new_canvas("Thiết kế các giao diện chính")
     screens = [
         ((70, 135, 500, 820), "Login", ["Hospital Readmission MLOps", "username", "password", "Doctor / Admin buttons"]),
-        ((585, 135, 1015, 820), "Dashboard", ["Total predictions", "Average probability", "Risk distribution", "Model information"]),
+        ((585, 135, 1015, 820), "Admin Console", ["Dashboard stats", "User accounts", "Disable / enable user", "MLOps tools"]),
         ((1100, 135, 1530, 820), "Patient & Prediction", ["Patient directory", "Clinical form", "Prediction result", "High-risk list"]),
     ]
     for box, title, rows in screens:
@@ -1181,11 +1236,15 @@ def build_doc() -> None:
     add_p(doc, "Mục tiêu của đồ án không chỉ là huấn luyện mô hình, mà còn xây dựng một hệ thống vận hành mô hình theo chuẩn MLOps: dữ liệu được phiên bản hóa, pipeline huấn luyện có thể chạy lại, model được đăng ký trên MLflow, API phục vụ dự đoán có cơ chế reload model, log dự đoán được lưu lại để phân tích và kích hoạt tái huấn luyện.")
 
     add_heading(doc, "1.2. Sơ đồ chức năng tổng quát", 2)
-    add_p(doc, "Hệ thống được chia thành bốn nhóm chức năng chính: quản lý người dùng và bệnh nhân, dự đoán tái nhập viện, dữ liệu và logging, quản trị MLOps. Cách phân rã này giúp tách rõ chức năng nghiệp vụ cho bác sĩ với chức năng vận hành mô hình dành cho admin.")
+    add_p(doc, "Sơ đồ chức năng tổng quát phân rã hệ thống dự đoán tái nhập viện bệnh nhân thành sáu nhóm chức năng chính. Cách phân chia này tách rõ phần nghiệp vụ dành cho bác sĩ, phần quản trị dành cho admin và phần vận hành MLOps phía sau hệ thống.")
+    add_p(doc, "Nhóm quản lý người dùng và xác thực chịu trách nhiệm đăng nhập, cấp JWT token, phân quyền Doctor/Admin và cho phép người dùng xem thông tin tài khoản hiện tại. Đây là lớp kiểm soát truy cập chung trước khi người dùng thao tác với bệnh nhân, dự đoán hoặc các chức năng quản trị.")
+    add_p(doc, "Nhóm quản lý bệnh nhân bao phủ các thao tác nghiệp vụ cốt lõi gồm thêm hồ sơ, xem danh sách, xem chi tiết, cập nhật, xóa hồ sơ bệnh nhân và xem danh sách bệnh nhân có nguy cơ cao. Dữ liệu bệnh nhân là đầu vào chính cho nhóm dự đoán tái nhập viện, nơi hệ thống nhận dữ liệu lâm sàng, tiền xử lý dữ liệu, tải model Production, trả kết quả dự đoán và ghi lại prediction log.")
+    add_p(doc, "Nhóm quản trị MLOps cho phép admin theo dõi trạng thái pipeline, kích hoạt Airflow DAG, chạy ETL, huấn luyện model, retraining model và reload model Production. Nhóm quản lý dữ liệu và huấn luyện mô hình mô tả luồng xử lý offline: đọc dữ liệu nguồn, chạy Spark Batch ETL, tạo dữ liệu Gold, tạo Offline Feature, train và đánh giá model, ghi experiment vào MLflow, lưu artifact vào MinIO và promote model tốt nhất lên Production.")
+    add_p(doc, "Nhóm giám sát hệ thống tập trung vào vận hành sau triển khai. FastAPI xuất metrics, Prometheus thu thập metrics, Grafana hiển thị dashboard và hệ thống có thể cảnh báo khi request, latency, error hoặc phân bố risk level xuất hiện bất thường. Nhờ đó, hệ thống không chỉ phục vụ dự đoán mà còn có khả năng theo dõi chất lượng vận hành và hỗ trợ tái huấn luyện khi dữ liệu mới phát sinh.")
     add_diagram(doc, diagrams[0], figure_titles[0])
 
     add_heading(doc, "1.3. Biểu đồ trường hợp sử dụng", 2)
-    add_p(doc, "Hệ thống có hai tác nhân chính. Bác sĩ sử dụng hệ thống để quản lý bệnh nhân, nhập dữ liệu lâm sàng và xem kết quả dự đoán. Admin có thêm quyền xem toàn bộ dữ liệu, điều khiển pipeline MLOps, truy cập lịch sử dự đoán và reload model production.")
+    add_p(doc, "Hệ thống có hai tác nhân chính. Bác sĩ sử dụng hệ thống để quản lý bệnh nhân, nhập dữ liệu lâm sàng và xem kết quả dự đoán. Admin có thêm quyền xem toàn bộ dữ liệu, quản lý tài khoản người dùng, điều khiển pipeline MLOps, truy cập lịch sử dự đoán và reload model production.")
     add_diagram(doc, diagrams[1], figure_titles[1])
     add_caption(doc, "Bảng 1.1: Các trường hợp sử dụng chính của hệ thống", "table")
     add_table(doc, ["Tác nhân", "Trường hợp sử dụng", "Mô tả"], [
@@ -1194,6 +1253,7 @@ def build_doc() -> None:
         ["Bác sĩ", "Dự đoán bệnh nhân", "Gửi đặc trưng lâm sàng tới API và nhận xác suất tái nhập viện"],
         ["Bác sĩ", "Xem high-risk", "Ưu tiên theo dõi bệnh nhân có xác suất tái nhập viện cao"],
         ["Admin", "Theo dõi dashboard", "Xem thống kê tổng quan, lịch sử dự đoán và thông tin model"],
+        ["Admin", "Quản lý người dùng", "Tạo tài khoản, cập nhật họ tên/vai trò, reset mật khẩu và bật/tắt trạng thái hoạt động"],
         ["Admin", "Điều khiển pipeline", "Kích hoạt DAG ingestion, ETL, training và retraining"],
         ["Admin", "Reload model", "Yêu cầu FastAPI tải lại model Production từ MLflow Registry"],
     ])
@@ -1212,7 +1272,7 @@ def build_doc() -> None:
     add_diagram(doc, diagrams[5], figure_titles[5])
     add_caption(doc, "Bảng 1.2: Các bảng dữ liệu chính", "table")
     add_table(doc, ["Bảng", "Vai trò trong hệ thống"], [
-        ["users", "Lưu tài khoản, mật khẩu đã băm, họ tên và vai trò doctor/admin"],
+        ["users", "Lưu tài khoản, mật khẩu đã băm, họ tên, vai trò doctor/admin và trạng thái is_active"],
         ["patients", "Lưu hồ sơ bệnh nhân, đặc trưng lâm sàng và nhãn actual_readmitted nếu có"],
         ["prediction_logs", "Lưu request_json, prediction, probability, risk_level, model_name và thời điểm dự đoán"],
         ["retraining_state", "Ghi nhận số lượng prediction/patient đã dùng cho lần huấn luyện gần nhất"],
@@ -1224,15 +1284,15 @@ def build_doc() -> None:
     add_diagram(doc, diagrams[6], figure_titles[6])
 
     add_heading(doc, "1.8. Thiết kế giao diện", 2)
-    add_p(doc, "Giao diện được xây dựng bằng React và Vite. Các màn hình chính được thiết kế cho hai nhóm người dùng: bác sĩ thao tác với bệnh nhân và admin vận hành hệ thống MLOps. Giao diện sử dụng các khối thông tin ngắn, bảng danh sách và form lâm sàng để giảm thao tác lặp lại.")
+    add_p(doc, "Giao diện được xây dựng bằng React và Vite. Các màn hình chính được thiết kế cho hai nhóm người dùng: bác sĩ thao tác với bệnh nhân và admin vận hành hệ thống MLOps. Admin có thêm màn hình Users để tạo tài khoản, cập nhật vai trò, reset mật khẩu và vô hiệu hóa/kích hoạt lại tài khoản. Giao diện sử dụng các khối thông tin ngắn, bảng danh sách và form lâm sàng để giảm thao tác lặp lại.")
     add_caption(doc, "Bảng 1.3: Các màn hình chính của giao diện", "table")
     add_table(doc, ["Màn hình", "Chức năng chính"], [
         ["Login", "Đăng nhập với tài khoản doctor01/doctor123 hoặc admin01/admin123"],
         ["Dashboard", "Hiển thị thống kê nghiệp vụ, thông tin model và Grafana dashboard MLOps"],
+        ["Users", "Quản lý tài khoản doctor/admin, reset mật khẩu và bật/tắt trạng thái hoạt động"],
         ["Doctor Overview", "Tổng quan bệnh nhân của bác sĩ và danh sách ưu tiên"],
         ["Patients", "Quản lý danh bạ bệnh nhân, xem chi tiết, dự đoán và lịch sử từng bệnh nhân"],
         ["Create Patient", "Nhập hồ sơ bệnh nhân mới và chạy dự đoán ngay sau khi tạo"],
-        ["Predict", "Dự đoán trực tiếp từ form lâm sàng không cần tạo hồ sơ trước"],
         ["High Risk Patients", "Danh sách bệnh nhân có nguy cơ tái nhập viện cao"],
         ["Pipelines", "Xem trạng thái DAG và kích hoạt pipeline Airflow"],
         ["Observability", "Truy cập Prometheus, MLflow và Airflow trong giao diện quản trị"],
@@ -1241,9 +1301,9 @@ def build_doc() -> None:
 
     add_heading(doc, "1.9. Thiết kế giải thuật", 2)
     add_p(doc, "Pipeline huấn luyện đọc dữ liệu CSV, thay ký tự ? bằng missing value, tạo nhãn readmitted_binary, loại bỏ các cột encounter_id, patient_nbr, weight, payer_code, medical_specialty và readmitted. Sau đó dữ liệu được chia train/test theo tỷ lệ 80/20 có stratify để giữ phân bố nhãn.")
-    add_p(doc, "Mô hình được xây dựng bằng sklearn Pipeline. Các cột số đi qua SimpleImputer(strategy='median') và StandardScaler; các cột phân loại đi qua SimpleImputer(fill_value='Unknown') và OneHotEncoder(handle_unknown='ignore'). Hai ứng viên trong cấu hình hiện tại là Random Forest và Logistic Regression, champion được chọn theo ROC-AUC.")
+    add_p(doc, "Mô hình được xây dựng bằng sklearn Pipeline. Các cột số đi qua SimpleImputer(strategy='median') và StandardScaler; các cột phân loại đi qua SimpleImputer(fill_value='Unknown') và OneHotEncoder(handle_unknown='ignore'). Hai ứng viên trong cấu hình hiện tại là Random Forest và Logistic Regression, champion được chọn theo recall.")
     add_diagram(doc, diagrams[8], figure_titles[8])
-    add_p(doc, "Cơ chế tái huấn luyện được thiết kế theo hướng database-triggered. Khi đủ bệnh nhân hoặc prediction log đã có nhãn actual_readmitted trong PostgreSQL, Airflow chạy prepare_training_from_db để tạo tập db_training_data.csv, huấn luyện lại mô hình, so sánh với phiên bản Production theo ngưỡng MIN_IMPROVEMENT, đăng ký model mới nếu tốt hơn và gọi FastAPI reload model.")
+    add_p(doc, "Cơ chế tái huấn luyện được thiết kế theo hướng database-triggered. Khi đủ bệnh nhân hoặc prediction log đã có nhãn actual_readmitted trong PostgreSQL, Airflow chạy prepare_training_from_db để tạo tập db_training_data.csv, huấn luyện lại hai mô hình ứng viên, chọn candidate tốt nhất theo recall, đăng ký phiên bản mới với nhãn v1, v2... và gọi FastAPI reload model.")
     add_diagram(doc, diagrams[9], figure_titles[9])
     add_p(doc, "Sơ đồ MLOps tổng thể mô tả vòng đời khép kín của mô hình: dữ liệu được thu thập và xử lý, thí nghiệm được ghi nhận trong MLflow, model tốt nhất được đưa vào Registry, FastAPI phục vụ suy luận, kết quả vận hành được giám sát và dữ liệu mới quay lại pipeline tái huấn luyện.")
     add_diagram(doc, diagrams[10], figure_titles[10])
@@ -1278,19 +1338,20 @@ def build_doc() -> None:
 
     add_heading(doc, "2.2. Các chức năng đã hiện thực", 2)
     add_heading(doc, "2.2.1. Quản lý người dùng và phân quyền", 3)
-    add_p(doc, "FastAPI khởi tạo hai tài khoản mặc định: doctor01/doctor123 và admin01/admin123. Người dùng đăng nhập qua /auth/login để nhận JWT. Các endpoint bệnh nhân yêu cầu vai trò doctor hoặc admin, trong khi endpoint pipeline và prediction log toàn hệ thống yêu cầu admin.")
+    add_p(doc, "FastAPI khởi tạo hai tài khoản mặc định: doctor01/doctor123 và admin01/admin123. Người dùng đăng nhập qua /auth/login để nhận JWT. Các endpoint bệnh nhân yêu cầu vai trò doctor hoặc admin, trong khi endpoint pipeline, prediction log toàn hệ thống và quản trị user yêu cầu admin.")
+    add_p(doc, "Admin có thể xem danh sách tài khoản, tạo user mới, cập nhật họ tên/vai trò, reset mật khẩu và thay đổi trạng thái is_active qua /users/{user_id}/status. Hệ thống không xóa cứng user; tài khoản bị vô hiệu hóa không thể đăng nhập và token cũ cũng bị từ chối khi gọi API.")
     add_heading(doc, "2.2.2. Quản lý bệnh nhân và dự đoán", 3)
     add_p(doc, "Người dùng có thể tạo, xem, cập nhật và xóa bệnh nhân. Endpoint /patients/{patient_id}/predict lấy dữ liệu bệnh nhân đã lưu, chuẩn hóa tên cột cho khớp pipeline huấn luyện, gọi model Production trên MLflow và lưu kết quả vào Redis cùng PostgreSQL.")
     add_heading(doc, "2.2.3. Pipeline ingestion, ETL và feature engineering", 3)
     add_p(doc, "ingestion_dag tạo Kafka topic patient-events và chạy producer phát lại dữ liệu CSV. etl_dag chạy Spark batch ETL để tạo data/gold/diabetic_gold.parquet, sau đó chạy feature_engineering.py để tạo data/features/offline/patient_features.parquet. Spark Streaming được đóng gói trong profile tùy chọn để ghi bronze parquet khi cần demo ingestion liên tục.")
     add_heading(doc, "2.2.4. Huấn luyện, đăng ký và reload model", 3)
-    add_p(doc, "training.train huấn luyện các mô hình ứng viên, log params/metrics/model vào MLflow và lưu champion vào models/model.pkl cùng reports/metrics.json. training.register_model kiểm tra artifact, so sánh metric với model Production hiện tại và promote phiên bản mới khi tốt hơn ngưỡng cấu hình.")
+    add_p(doc, "training.train huấn luyện các mô hình ứng viên, log params/metrics/model vào MLflow và lưu champion vào models/model.pkl cùng reports/metrics.json. training.register_model kiểm tra artifact, đăng ký champion của lần chạy hiện tại, gắn nhãn phiên bản v1, v2... và promote phiên bản mới lên Production.")
     add_heading(doc, "2.2.5. Giám sát và dashboard", 3)
     add_p(doc, "FastAPI expose /metrics theo chuẩn Prometheus, gồm tổng request dự đoán, latency, lỗi dự đoán, phân bố risk_level, histogram xác suất và số lần reload model. Grafana dashboard đọc Prometheus để hiển thị tình trạng API và chất lượng vận hành.")
     add_diagram(doc, diagrams[12], figure_titles[12])
 
     add_heading(doc, "2.3. Kết quả đánh giá mô hình", 2)
-    add_p(doc, "Kết quả trong reports/metrics.json cho thấy Random Forest là champion hiện tại. Mô hình được chọn theo metric ROC-AUC với mode max. Các chỉ số còn khiêm tốn, đặc biệt precision thấp, phản ánh độ khó của bài toán do nhãn <30 chỉ chiếm khoảng 11,2% dữ liệu.")
+    add_p(doc, "Kết quả trong reports/metrics.json cho thấy candidate có recall cao nhất là champion hiện tại. Mô hình được chọn theo metric recall với mode max. Các chỉ số còn khiêm tốn, đặc biệt precision thấp, phản ánh độ khó của bài toán do nhãn <30 chỉ chiếm khoảng 11,2% dữ liệu.")
     add_caption(doc, "Bảng 2.2: So sánh mô hình ứng viên", "table")
     add_table(doc, ["Ứng viên", "Loại mô hình", "Accuracy", "Precision", "Recall", "F1", "ROC-AUC"], candidate_rows())
     add_caption(doc, "Bảng 2.3: Kết quả đánh giá mô hình champion", "table")
@@ -1353,6 +1414,9 @@ def build_doc() -> None:
     add_table(doc, ["Phương thức", "Đường dẫn", "Chức năng"], [
         ["POST", "/auth/login", "Đăng nhập và nhận access token"],
         ["GET", "/auth/me", "Lấy thông tin người dùng hiện tại"],
+        ["GET/POST", "/users", "Admin xem danh sách hoặc tạo tài khoản doctor/admin"],
+        ["PUT", "/users/{user_id}", "Admin cập nhật họ tên, vai trò hoặc reset mật khẩu"],
+        ["PATCH", "/users/{user_id}/status", "Admin vô hiệu hóa hoặc kích hoạt lại tài khoản"],
         ["GET/POST", "/patients", "Danh sách hoặc tạo bệnh nhân"],
         ["GET/PUT/DELETE", "/patients/{patient_id}", "Xem, cập nhật hoặc xóa bệnh nhân"],
         ["POST", "/patients/{patient_id}/predict", "Dự đoán từ hồ sơ bệnh nhân đã lưu"],
