@@ -24,7 +24,7 @@ model:
         class_weight: balanced
 
 selection:
-  metric: roc_auc
+  metric: recall
   mode: max
 
 output:

@@ -13,7 +13,6 @@ METRICS_PATH = os.getenv("METRICS_PATH", "reports/metrics.json")
 
 REGISTER_METRIC_NAME = os.getenv("REGISTER_METRIC_NAME")
 REGISTER_METRIC_MODE = os.getenv("REGISTER_METRIC_MODE")
-MIN_IMPROVEMENT = float(os.getenv("MIN_IMPROVEMENT", "0.001"))
 
 
 def load_candidate_from_metrics_file():
@@ -27,9 +26,10 @@ def load_candidate_from_metrics_file():
 
     run_id = data.get("run_id")
     model_uri = data.get("model_uri")
+    model_type = data.get("model_type")
     metrics = data.get("metrics", {})
     selection = data.get("selection", {})
-    metric_name = REGISTER_METRIC_NAME or selection.get("metric") or "roc_auc"
+    metric_name = REGISTER_METRIC_NAME or selection.get("metric") or "recall"
     metric_mode = REGISTER_METRIC_MODE or selection.get("mode") or "max"
 
     if not run_id:
@@ -41,7 +41,7 @@ def load_candidate_from_metrics_file():
     if metric_name not in metrics:
         raise ValueError(f"metrics.json không có metric: {metric_name}")
 
-    return run_id, model_uri, float(metrics[metric_name]), metric_name, metric_mode
+    return run_id, model_uri, model_type, float(metrics[metric_name]), metric_name, metric_mode
 
 
 def verify_model_artifact(model_uri: str):
@@ -56,50 +56,63 @@ def verify_model_artifact(model_uri: str):
     print(f"Verified model artifact: {local_path}")
 
 
-def get_production_model(client: MlflowClient, metric_name: str):
-    versions = client.search_model_versions(f"name='{MODEL_NAME}'")
+def set_version_metadata(
+    client: MlflowClient,
+    registered_version,
+    model_type: str | None,
+    metric_name: str,
+    metric_value: float,
+) -> str:
+    version_label = f"v{registered_version.version}"
 
-    production_versions = [
-        version
-        for version in versions
-        if version.current_stage == "Production"
-    ]
+    client.set_model_version_tag(
+        name=MODEL_NAME,
+        version=registered_version.version,
+        key="version_label",
+        value=version_label,
+    )
+    client.set_model_version_tag(
+        name=MODEL_NAME,
+        version=registered_version.version,
+        key="selection_metric",
+        value=metric_name,
+    )
+    client.set_model_version_tag(
+        name=MODEL_NAME,
+        version=registered_version.version,
+        key="selection_metric_value",
+        value=str(metric_value),
+    )
 
-    if not production_versions:
-        return None, None
+    if model_type:
+        client.set_model_version_tag(
+            name=MODEL_NAME,
+            version=registered_version.version,
+            key="model_type",
+            value=model_type,
+        )
+        client.set_tag(
+            run_id=registered_version.run_id,
+            key="model_type",
+            value=model_type,
+        )
 
-    latest_production = sorted(
-        production_versions,
-        key=lambda version: int(version.version),
-        reverse=True,
-    )[0]
+    client.set_tag(
+        run_id=registered_version.run_id,
+        key="registered_version_label",
+        value=version_label,
+    )
 
     try:
-        run = client.get_run(latest_production.run_id)
-    except Exception as exc:
-        print(
-            "Cannot read current Production run "
-            f"{latest_production.run_id}. Treating the new model as better. "
-            f"Reason: {exc}"
+        client.set_registered_model_alias(
+            name=MODEL_NAME,
+            alias=version_label,
+            version=registered_version.version,
         )
-        return latest_production, None
+    except Exception as exc:
+        print(f"Cannot set MLflow alias {version_label}. Tag was still saved. Reason: {exc}")
 
-    metric = run.data.metrics.get(metric_name)
-
-    return latest_production, metric
-
-
-def is_better(candidate_metric, production_metric, metric_mode: str):
-    if production_metric is None:
-        return True
-
-    if metric_mode == "max":
-        return candidate_metric > production_metric + MIN_IMPROVEMENT
-
-    if metric_mode == "min":
-        return candidate_metric < production_metric - MIN_IMPROVEMENT
-
-    raise ValueError("REGISTER_METRIC_MODE chỉ được là 'max' hoặc 'min'.")
+    return version_label
 
 
 def main():
@@ -110,6 +123,7 @@ def main():
     (
         run_id,
         model_uri,
+        model_type,
         candidate_metric,
         metric_name,
         metric_mode,
@@ -117,29 +131,23 @@ def main():
 
     print(f"Candidate run_id: {run_id}")
     print(f"Candidate model_uri: {model_uri}")
+    print(f"Candidate model_type: {model_type}")
     print(f"Selection metric: {metric_name} ({metric_mode})")
     print(f"Candidate {metric_name}: {candidate_metric}")
 
     verify_model_artifact(model_uri)
 
-    production_version, production_metric = get_production_model(client, metric_name)
-
-    if production_version is None:
-        print("Chưa có Production model. Sẽ register model đầu tiên.")
-    else:
-        print(
-            f"Current Production version: {production_version.version}, "
-            f"run_id: {production_version.run_id}, "
-            f"{metric_name}: {production_metric}"
-        )
-
-    if not is_better(candidate_metric, production_metric, metric_mode):
-        print("Model mới không tốt hơn Production model. Bỏ qua register/promote.")
-        return
-
     registered_model = mlflow.register_model(
         model_uri=model_uri,
         name=MODEL_NAME,
+    )
+
+    version_label = set_version_metadata(
+        client=client,
+        registered_version=registered_model,
+        model_type=model_type,
+        metric_name=metric_name,
+        metric_value=candidate_metric,
     )
 
     client.transition_model_version_stage(
@@ -150,7 +158,8 @@ def main():
     )
 
     print(
-        f"Promoted {MODEL_NAME} version {registered_model.version} "
+        f"Registered {MODEL_NAME} version {registered_model.version} "
+        f"({version_label}) and promoted it "
         f"to Production. Metric {metric_name} = {candidate_metric}"
     )
 

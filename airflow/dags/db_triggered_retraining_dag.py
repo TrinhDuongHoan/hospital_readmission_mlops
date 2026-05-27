@@ -220,9 +220,8 @@ with DAG(
             "AWS_SECRET_ACCESS_KEY=minio123 "
             "AWS_DEFAULT_REGION=us-east-1 "
             "METRICS_PATH=/opt/project/reports/metrics.json "
-            "REGISTER_METRIC_NAME=roc_auc "
+            "REGISTER_METRIC_NAME=recall "
             "REGISTER_METRIC_MODE=max "
-            "MIN_IMPROVEMENT=0.001 "
             "python -m training.register_model"
         ),
     )

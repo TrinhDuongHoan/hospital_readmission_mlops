@@ -96,7 +96,9 @@ def load_prediction_logs() -> pd.DataFrame:
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
     with engine.begin() as connection:
-        df = pd.read_sql(text(query), connection)
+        rows = connection.execute(text(query)).mappings().all()
+
+    df = pd.DataFrame(rows)
 
     return df
 
